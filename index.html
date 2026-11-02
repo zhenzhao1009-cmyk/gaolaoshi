@@ -527,7 +527,7 @@ FLOWERS.sort((a, b) => !!b.frames - !!a.frames);
 function makeSlot(type) {
   return {
     type, bloom: 0.68, target: 0.68, over: 0, overTarget: 0,
-    count: 0, countVotes: { n: -1, k: 0 }, tau: 90,
+    count: 0, countW: [0, 0, 0, 0, 0, 0], tau: 90,
     yaw: 0, yawTarget: null, fade: 1, mode: "", seen: -1e9,
     swipe: [], lastSwitch: 0, lastDir: 0, modeVotes: { mode: "", n: 0 },
     tips: [], spawn: 0, track: null, manualUntil: 0,
@@ -759,13 +759,13 @@ function setBloom(i, value, celebrate = false, mode = "manual") {
   s.overTarget = celebrate && !reducedMotion ? 1 : 0;
   s.yawTarget = null;
   s.mode = mode; s.manualUntil = performance.now() + 1800;
-  s.tau = mode === "count" ? 380 : 120;
+  s.tau = mode === "count" ? 320 : 120;
 }
 function chooseFlower(i, type) {
   const s = slots[i];
   s.type = (type + FLOWERS.length) % FLOWERS.length;
   s.fade = 0; s.overTarget = 0; s.yawTarget = null;
-  s.countVotes = { k: -1, n: 0 };
+  s.countW = [0, 0, 0, 0, 0, 0];
   s.modeVotes = { mode: "", n: 0 }; s.mode = "";
   ensureFrames(FLOWERS[s.type]);
   updateMeta();
@@ -1543,8 +1543,21 @@ $("camSel").addEventListener("change", async (e) => {
 const detCanvas = document.createElement("canvas");
 const detCtx = detCanvas.getContext("2d");
 
-/* 判断一根手指是否伸直：指尖离手腕比第二关节离手腕远得多 */
-const extended = (h, tip, pip) => dist(h[0], h[tip]) > dist(h[0], h[pip]) * 1.12;
+/* 判断一根手指是否伸直：指尖离手腕 ÷ 指根离手腕。
+ * 比旧版"指尖比第二关节远 12%"更稳：半弯的手指不会在阈值两侧抖动。
+ * 带迟滞（hysteresis）：伸直后要弯得更多才算收起，收起后要伸得更直才算伸出，
+ * prev 传上一帧这根手指的状态。 */
+const FINGER_ENTER = 1.48, FINGER_EXIT = 1.32;
+function fingerExtended(h, tip, mcp, prev) {
+  const ratio = dist(h[0], h[tip]) / Math.max(1e-9, dist(h[0], h[mcp]));
+  return prev ? ratio > FINGER_EXIT : ratio > FINGER_ENTER;
+}
+/* 拇指：指尖离食指根 ÷ 手掌长。收拢的拇指贴着食指（约 0.3），张开约 1.0。同样带迟滞。 */
+const THUMB_ENTER = 0.72, THUMB_EXIT = 0.58;
+function thumbExtended(h, palm, prev) {
+  const ratio = dist(h[4], h[5]) / Math.max(1e-9, palm);
+  return prev ? ratio > THUMB_EXIT : ratio > THUMB_ENTER;
+}
 
 // 挥手：450ms 内手掌横移超过画面宽度的 16%
 const SWIPE_MS = 450, SWIPE_DIST = 0.16;
@@ -1552,10 +1565,11 @@ const SWIPE_MS = 450, SWIPE_DIST = 0.16;
 // 两指最多把花开到七成（外层花瓣打开），剩下三成留给五指张开
 const PINCH_MAX = 0.7;
 
-function readHand(h) {
+function readHand(h, prev) {
   const palm = dist(h[0], h[9]);
-  const idx = extended(h, 8, 6);
-  const others = [[12, 10], [16, 14], [20, 18]].filter(([t, p]) => extended(h, t, p)).length;
+  const pv = Array.isArray(prev) && prev.length === 5 ? prev : [null, null, null, null, null];
+  const idx = fingerExtended(h, 8, 5, pv[1]);
+  const others = [[12, 9], [16, 13], [20, 17]].filter(([t, m]) => fingerExtended(h, t, m, null)).length;
   // 拇指尖到食指尖的距离 ÷ 手掌长度：捏紧约 0.1，张成"八"字约 1.0
   const ratio = dist(h[4], h[8]) / palm;
   const pinch = clamp((ratio - 0.12) / (0.95 - 0.12));
@@ -1563,11 +1577,11 @@ function readHand(h) {
   const spread = clamp((dist(h[4], h[20]) / palm - 1.1) / 0.8);
   // 手掌倾斜角：手腕 → 中指根
   const roll = Math.atan2((h[9].x - h[0].x) * handAspect, h[0].y - h[9].y);
-  // 数手指：拇指尖离中指根够远算伸出，其余四指用 extended 判断
+  // 数手指：拇指 + 食/中/无名/小指各用带迟滞的伸直判断
   const ext = [
-    dist(h[4], h[9]) > palm * 0.6,
+    thumbExtended(h, palm, pv[0]),
     idx,
-    ...[[12, 10], [16, 14], [20, 18]].map(([t, p]) => extended(h, t, p)),
+    ...[[12, 9], [16, 13], [20, 17]].map(([t, m]) => fingerExtended(h, t, m, pv[t === 12 ? 2 : t === 16 ? 3 : 4])),
   ];
   const count = ext.filter(Boolean).length;
   return { idx, others, ratio, pinch, spread, roll, ext, count };
@@ -1576,7 +1590,7 @@ function readHand(h) {
 function applyHand(i, h, now) {
   const s = slots[i];
   if (now < s.manualUntil) { s.seen = now; $("m" + i).textContent = "手动赏花 · 稍后恢复手势"; return; }
-  const r = readHand(h);
+  const r = readHand(h, s.ext);
   r.pinch = clamp(s.fPinch(r.pinch, now));
   r.spread = clamp(s.fSpread(r.spread, now));
   r.roll = s.fRoll(r.roll, now);
@@ -1623,13 +1637,15 @@ function applyHand(i, h, now) {
   s.ext = r.ext;
   if (!stages && s.mode === "count") s.mode = "pinch"; // 刚从数指的花换过来
   if (stages) {
-    // 数指模式：同一个手指数连续 5 帧才算数，然后慢慢播到那一段
-    if (r.count === s.countVotes.k) s.countVotes.n++;
-    else s.countVotes = { k: r.count, n: 1 };
-    if (s.countVotes.n >= 5) s.count = r.count;
+    // 数指模式：指数衰减投票。每个手指数的票每帧 ×0.8、当前读数 +1，
+    // 稳定的多数大约 4–5 帧就能生效；个别帧识别抖动只会投出 1 票，翻不了盘。
+    for (let k = 0; k < 6; k++) s.countW[k] *= 0.8;
+    s.countW[r.count] += 1;
+    const best = s.countW.indexOf(Math.max(...s.countW));
+    if (best !== s.count && s.countW[best] > 2.6) s.count = best;
     s.mode = s.count === 5 ? "palm" : "count";
     s.target = stages[s.count];
-    s.tau = 380;
+    s.tau = 320;
     s.overTarget = s.count === 5 ? clamp((r.spread - 0.6) / 0.4) : 0;
     s.yawTarget = s.count === 5 ? -r.roll * 2.2 : null;
   } else if (s.mode === "pinch") {
