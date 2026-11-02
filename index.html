@@ -378,6 +378,7 @@
       <div class="camera-actions"><button id="cameraToggle" type="button" aria-pressed="false">开启摄像头</button><label><input id="motionToggle" type="checkbox">减少动效</label></div>
       <p class="cammsg" id="camMsg" role="status" aria-live="polite">摄像头尚未开启，演示和滑杆均可使用。</p>
     </div>
+    <i class="camera-resize" id="cameraResize" title="拖动调整窗口大小" aria-hidden="true"></i>
   </section>
 </div>
 <dialog id="helpDialog" aria-labelledby="helpTitle">
@@ -569,6 +570,8 @@ function clearCameraWindowPosition() {
   cameraWindow.style.top = "";
   cameraWindow.style.right = "";
   cameraWindow.style.bottom = "";
+  cameraWindow.style.width = "";
+  cameraWindow.style.height = "";
 }
 function isCompactCameraLayout() {
   return document.body.classList.contains("phone") || cameraViewportWidth() <= 760;
@@ -588,12 +591,20 @@ function resetCameraWindowPosition(forget = true) {
   if (forget) {
     delete cameraWindowPrefs.left;
     delete cameraWindowPrefs.top;
+    delete cameraWindowPrefs.w;
+    delete cameraWindowPrefs.h;
     writeCameraWindowPrefs();
   }
 }
 function restoreCameraWindowPosition() {
   clearCameraWindowPosition();
   if (isCompactCameraLayout()) return;
+  if (Number.isFinite(cameraWindowPrefs.w)) {
+    cameraWindow.style.width = Math.round(clamp(cameraWindowPrefs.w, 240, cameraViewportWidth() - 16)) + "px";
+  }
+  if (Number.isFinite(cameraWindowPrefs.h)) {
+    cameraWindow.style.height = Math.round(clamp(cameraWindowPrefs.h, 200, cameraViewportHeight() - 16)) + "px";
+  }
   if (Number.isFinite(cameraWindowPrefs.left) && Number.isFinite(cameraWindowPrefs.top)) {
     cameraWindow.style.left = cameraWindowPrefs.left + "px";
     cameraWindow.style.top = cameraWindowPrefs.top + "px";
@@ -658,6 +669,45 @@ cameraDragHandle.addEventListener("pointerup", endCameraWindowDrag);
 cameraDragHandle.addEventListener("pointercancel", endCameraWindowDrag);
 cameraDragHandle.addEventListener("dblclick", () => resetCameraWindowPosition());
 cameraHomeBtn.addEventListener("click", () => resetCameraWindowPosition());
+/* 左下角手柄：拖动调整窗口宽高，大小与位置一起记忆 */
+const cameraResize = $("cameraResize");
+const CAMERA_SIZE_MIN = { w: 240, h: 200 };
+let cameraWindowResize = null;
+cameraResize.addEventListener("pointerdown", (e) => {
+  e.stopPropagation?.();
+  e.preventDefault?.();
+  const r = cameraWindow.getBoundingClientRect();
+  cameraWindowResize = { x: e.clientX, y: e.clientY, w: r.width, h: r.height, left: r.left, top: r.top };
+  cameraResize.setPointerCapture?.(e.pointerId);
+});
+cameraResize.addEventListener("pointermove", (e) => {
+  if (!cameraWindowResize) return;
+  const s = cameraWindowResize;
+  // 窗口锚定在拖动起点的左上角：向左拖加宽，向下拖加高
+  const w = clamp(s.w + (s.x - e.clientX), CAMERA_SIZE_MIN.w, Math.max(CAMERA_SIZE_MIN.w, cameraViewportWidth() - s.left - 12));
+  const h = clamp(s.h + (e.clientY - s.y), CAMERA_SIZE_MIN.h, Math.max(CAMERA_SIZE_MIN.h, cameraViewportHeight() - s.top - 12));
+  cameraWindow.style.left = s.left + "px";
+  cameraWindow.style.top = s.top + "px";
+  cameraWindow.style.right = "auto";
+  cameraWindow.style.bottom = "auto";
+  cameraWindow.style.width = w + "px";
+  cameraWindow.style.height = h + "px";
+});
+const endCameraWindowResize = () => {
+  if (cameraWindowResize) {
+    const r = cameraWindow.getBoundingClientRect();
+    cameraWindowPrefs.w = Math.round(r.width);
+    cameraWindowPrefs.h = Math.round(r.height);
+    if (!isCompactCameraLayout()) {
+      cameraWindowPrefs.left = Math.round(r.left);
+      cameraWindowPrefs.top = Math.round(r.top);
+    }
+    writeCameraWindowPrefs();
+  }
+  cameraWindowResize = null;
+};
+cameraResize.addEventListener("pointerup", endCameraWindowResize);
+cameraResize.addEventListener("pointercancel", endCameraWindowResize);
 cameraWindowToggle.addEventListener("click", () => cameraState === "running" || cameraState === "loading" ? stopCamera() : startCamera());
 cameraDetailsToggle.addEventListener("click", () => setCameraControlsCollapsed(!cameraWindow.classList.contains("camera-controls-collapsed")));
 setCameraControlsCollapsed(typeof cameraWindowPrefs.collapsed === "boolean" ? cameraWindowPrefs.collapsed : cameraWindowWasCompact, false);

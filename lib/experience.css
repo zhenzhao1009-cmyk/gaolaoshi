@@ -161,6 +161,28 @@ body.phone .manual-control { margin-top:7px; font-size:10px; }
 .camera-window-actions button:hover { border-color:rgba(239,230,214,.42); color:#f0e4d1; }
 #cameraWindowToggle { border-color:rgba(200,94,76,.42); color:#e2a092; }
 #cameraHomeBtn { color:#a99b88; }
+.camera-resize {
+  position:absolute;
+  left:0; bottom:0;
+  width:30px; height:30px;
+  cursor:sw-resize;
+  touch-action:none;
+  z-index:6;
+  border-bottom-left-radius:11px;
+}
+.camera-resize::before,.camera-resize::after {
+  content:"";
+  position:absolute;
+  width:13px; height:2px;
+  border-radius:2px;
+  background:rgba(239,230,214,.4);
+  transform:rotate(-45deg);
+  transition:background .2s;
+}
+.camera-resize::before { left:3px; bottom:9px; }
+.camera-resize::after { left:8px; bottom:4px; }
+.camera-resize:hover::before,.camera-resize:active::before,
+.camera-resize:hover::after,.camera-resize:active::after { background:rgba(239,230,214,.75); }
 .camera-view {
   position:relative;
   width:100%;
