@@ -82,10 +82,12 @@ H       纯净画面
   - 分层开放动画：外层花瓣先展开，内层延迟 0-120ms，三种缓动函数（弹性/回弹/立方）
   - 山茶虹彩：iridescence 0.15，模拟革质花瓣的微弱彩虹反射
 
-🚀 高级效果与智能化（P2 部分完成）：
+🚀 高级效果与智能化（P2 完成 100%）：
   - 移动端 LOD 自动检测：根据设备类型、内存、GPU 自动选择最佳 LOD，准确率 95%+
   - 后处理 Bloom 泛光：轻量级双通道高斯模糊，花朵边缘柔和光晕，可选功能（默认关闭）
-  - 用户可手动设置 LOD 级别，保存到 localStorage
+  - 百合斑点法线贴图：程序生成 35 个斑点纹理，模拟真实百合花瓣表面细节，无几何开销
+  - 环境贴图反射：花瓣反射宣纸底色，envMapIntensity 0.12，增强沉浸感（默认开启）
+  - 用户可手动设置 LOD 级别和开关所有后处理效果，保存到 localStorage
 
 详见 design/visual-optimization-report.md、design/p1-optimization-report.md 和 design/p2-optimization-report.md。
 
