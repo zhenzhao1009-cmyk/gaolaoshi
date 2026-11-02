@@ -72,6 +72,22 @@ await check('Finger counting is precise and tolerates detection flickers',async(
   if(Math.abs(slots[0].target-FLOWERS[1].stages[4])>1e-9)return 'stage target wrong';
   return 'ok'})()`);
 assert.equal(out,'ok',out)});
+await check('Duo flowers require two hands unless manually forced',async()=>{const h=makeHarness();await settle();
+// 只有一只手（slot 1 从未被识别）：即便 loop 跑多个周期，duo 必须保持 0
+h.eval('slots[0].seen=9000;slots[1].seen=-1e9');
+for(let k=1;k<=4;k++)h.eval('loop('+(9000+k*100)+');slots[0].seen='+(9000+k*100));
+assert.ok(h.eval('duo')<0.01,'duo must stay 0 with one hand');
+// 两只手都识别到：duo 升起来
+for(let k=0;k<=10;k++){const t=10000+k*100;h.eval('slots[0].seen='+t+';slots[1].seen='+t+';loop('+t+')')}
+assert.ok(h.eval('duo')>0.5,'duo must rise with two hands');
+// 一只手又消失了：duo 回落（另一只手仍活跃）
+for(let k=0;k<=20;k++){const t=11200+k*100;h.eval('slots[0].seen='+t+';loop('+t+')')}
+assert.ok(h.eval('duo')<0.01,'duo must fall back with one hand');
+// 手动开双花不受影响
+h.eval('toggleDuo()');
+assert.equal(h.eval('forceDuo'),true);
+for(let k=0;k<=10;k++)h.eval('loop('+(13400+k*100)+')');
+assert.ok(h.eval('duo')>0.9,'forced duo must stay on')});
 
 console.log('\n'+passed+' checks passed. Mocked logic only; live camera and browser layout require manual QA.');
 })().catch(e=>{console.error(e);process.exitCode=1});

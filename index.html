@@ -1817,7 +1817,10 @@ function loop(now) {
     }
   }
   if (demoMode) updateDemo(now);
-  const wantDuo = forceDuo || now - slots[1].seen < 700;
+  // 双花只在真实识别到两只手时进入/维持；手动开的双花 (forceDuo) 例外。
+  // 两只手各自在约 400ms 内都被识别到才进入；识别偶尔卡顿几帧不会抖。
+  const twoHands = Math.max(now - slots[0].seen, now - slots[1].seen) < 400;
+  const wantDuo = forceDuo || twoHands;
   duo += ((wantDuo ? 1 : 0) - duo) * follow(dt, 200);
   slots.forEach((s, i) => {
     s.bloom += (s.target - s.bloom) * follow(dt, s.tau);
