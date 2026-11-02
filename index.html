@@ -333,7 +333,7 @@
     <div class="toast" id="toast" role="status" aria-live="polite"></div>
     <div class="meta l" id="meta0"><div class="idx label"></div><div class="name"></div><div class="latin"></div><div class="verse"></div><div class="bloom label"><i></i><span></span></div></div>
     <div class="meta r" id="meta1"><div class="idx label"></div><div class="name"></div><div class="latin"></div><div class="verse"></div><div class="bloom label"><i></i><span></span></div></div>
-    <div class="experience-hint"><p id="gestureHint">两指捏合，花随手开。</p><span id="assetStatus">立体花</span></div>
+    <div class="experience-hint"><p id="gestureHint">捏合连续开合，数指分级绽放。</p><span id="assetStatus">立体花</span></div>
     <div class="stage-tools" role="group" aria-label="体验控制">
       <button id="demoBtn" type="button" aria-pressed="false">自动演示</button>
       <button id="duoBtn" type="button" aria-pressed="false">双花</button>
@@ -368,8 +368,8 @@
         <div class="hand b"><div class="k label">右侧花</div><div class="v" id="m1">双手入镜可体验</div><div class="bar"><i id="b1"></i></div></div>
       </div>
       <dl class="legend">
-        <dt>捏合</dt><dd>荷花、玫瑰随两指距离开合</dd>
-        <dt>数指</dt><dd>百合、山茶、樱花按 0–5 指分级</dd>
+        <dt>捏合</dt><dd>拇指与食指开合，连续控制所有花种</dd>
+        <dt>数指</dt><dd>伸出 0–5 根手指，全花种按阶段开放</dd>
         <dt>展掌</dt><dd>花朵盛放，倾斜手掌调整角度</dd>
         <dt>挥手</dt><dd>向右下一朵，向左上一朵</dd>
       </dl>
@@ -385,7 +385,7 @@
   <form method="dialog"><button class="dialog-close" aria-label="关闭操作指引">关闭</button></form>
   <h2 id="helpTitle">从举手，到花开</h2>
   <p class="help-intro">面对镜头，手掌完整入镜。单手控制一朵花，双手分别控制两朵花。</p>
-  <ol class="guide-steps"><li><strong>01 · 举手入镜</strong><p>开启摄像头并允许权限，保持光线充足，等待手部骨架出现。</p></li><li><strong>02 · 让花开放</strong><p>荷花、玫瑰：收起其他三指，张开拇指与食指。百合、山茶、樱花：伸出 0–5 根手指。</p></li><li><strong>03 · 展掌与换花</strong><p>展开手掌欣赏盛放，倾斜手掌转动花朵。横向快速挥手切换花种。</p></li></ol>
+  <ol class="guide-steps"><li><strong>01 · 举手入镜</strong><p>开启摄像头并允许权限，保持光线充足，等待手部骨架出现。</p></li><li><strong>02 · 让花开放</strong><p>所有花种通用：收起其他三指，用拇指与食指捏合连续开合；或伸出 0–5 根手指，按六个阶段开放。</p></li><li><strong>03 · 展掌与换花</strong><p>展开手掌欣赏盛放，倾斜手掌转动花朵。横向快速挥手切换花种。</p></li></ol>
   <p class="help-note">无摄像头也能体验：使用手动滑杆或自动演示。双手首次按画面位置绑定，持续追踪期间尽量保持手部可见。</p>
   <p class="help-keys">快捷键：空格 演示 · ← → 换花 · 0–5 开度 · D 双花 · V 竖屏 · H 纯净画面</p>
 </dialog>
@@ -429,6 +429,8 @@ const FLOWERS = [
   {
     name: "Lotus", chinese: "荷花", line: "出淤泥而不染，濯清涟而不妖。", latin: "Nelumbo nucifera", verse: "Rising clean from the mud.",
     frames: { dir: "frames/lotus", count: 120 },
+    // 全花种双手势：0–5 指数对应六个阶段；两指捏合时连续微调
+    stages: [0, 0.24, 0.38, 0.5, 0.66, 1],
     view: 24, lift: 0.1,
     stem: { len: 1.25, bend: 0.12, w: 0.028, c: "#55703a" },
     layers: [
@@ -449,9 +451,7 @@ const FLOWERS = [
       len: 1.3, bend: 0.1, w: 0.026, c: "#5f7f40",
       leaves: [
         { at: 0.18, phi: 220, len: 0.42, wid: 0.095, tilt: 56, curl: 16, fold: 0.5 },
-        { at: 0.3, phi: 40, len: 0.48, wid: 0.105, tilt: 54, curl: 18, fold: 0.48 },
         { at: 0.48, phi: 170, len: 0.5, wid: 0.11, tilt: 52, curl: 18, fold: 0.48 },
-        { at: 0.58, phi: 120, len: 0.52, wid: 0.11, tilt: 51, curl: 19, fold: 0.47 },
         { at: 0.66, phi: 300, len: 0.54, wid: 0.115, tilt: 50, curl: 20, fold: 0.46 },
         { at: 0.84, phi: 90, len: 0.56, wid: 0.12, tilt: 48, curl: 20, fold: 0.46 },
       ],
@@ -465,6 +465,8 @@ const FLOWERS = [
   {
     name: "Rose", chinese: "玫瑰", line: "层层花瓣，藏着未说完的心意。", latin: "Rosa rugosa", verse: "Each layer, a held breath.",
     frames: { dir: "frames/rose", count: 150, petals: ["#b3122c", "#d42a45", "#8e1328"] },
+    // 全花种双手势：0–5 指数对应六个阶段；两指捏合时连续微调
+    stages: [0, 0.2, 0.32, 0.46, 0.62, 1],
     view: 34, lift: 0.08,
     stem: { len: 1.15, bend: 0.08, w: 0.024, c: "#4d6b33" },
     layers: [
@@ -1584,7 +1586,10 @@ function readHand(h, prev) {
     ...[[12, 9], [16, 13], [20, 17]].map(([t, m]) => fingerExtended(h, t, m, pv[t === 12 ? 2 : t === 16 ? 3 : 4])),
   ];
   const count = ext.filter(Boolean).length;
-  return { idx, others, ratio, pinch, spread, roll, ext, count };
+  // 捏合时拇指尖靠近食指尖，但离食指根仍有约一根食指的距离；
+  // 单伸食指时拇指收在掌心，离食指根更近。用这个比例把"捏合"和"数 1"分开。
+  const thumbPinch = dist(h[4], h[5]) / Math.max(1e-9, palm) > 0.42;
+  return { idx, others, ratio, pinch, spread, roll, ext, count, thumbPinch };
 }
 
 function applyHand(i, h, now) {
@@ -1594,10 +1599,11 @@ function applyHand(i, h, now) {
   r.pinch = clamp(s.fPinch(r.pinch, now));
   r.spread = clamp(s.fSpread(r.spread, now));
   r.roll = s.fRoll(r.roll, now);
-  // 五指：食指 + 其余三指全部伸直才进入；已经在五指时，弯下去两根以上才退出
-  const want = s.mode === "palm"
-    ? (r.idx && r.others >= 2 ? "palm" : "pinch")
-    : (r.idx && r.others === 3 ? "palm" : "pinch");
+  // 全花种双手势：拇指与食指捏合（其余三指收起）连续控制；
+  // 张指数 0–5 对应六个阶段；五指展开进入展掌，继续盛放并转动花朵。
+  const pinchPose = r.idx && r.others === 0 && r.thumbPinch;
+  const palmPose = r.idx && r.count === 5;
+  const want = pinchPose ? "pinch" : palmPose ? "palm" : "count";
   // 防抖：同一个手势连续 6 帧才切换
   if (want === s.modeVotes.mode) s.modeVotes.n++;
   else s.modeVotes = { mode: want, n: 1 };
@@ -1635,38 +1641,39 @@ function applyHand(i, h, now) {
 
   const stages = FLOWERS[s.type].stages;
   s.ext = r.ext;
-  if (!stages && s.mode === "count") s.mode = "pinch"; // 刚从数指的花换过来
-  if (stages) {
-    // 数指模式：指数衰减投票。每个手指数的票每帧 ×0.8、当前读数 +1，
-    // 稳定的多数大约 4–5 帧就能生效；个别帧识别抖动只会投出 1 票，翻不了盘。
-    for (let k = 0; k < 6; k++) s.countW[k] *= 0.8;
-    s.countW[r.count] += 1;
-    const best = s.countW.indexOf(Math.max(...s.countW));
-    if (best !== s.count && s.countW[best] > 2.6) s.count = best;
-    s.mode = s.count === 5 ? "palm" : "count";
-    s.target = stages[s.count];
-    s.tau = 320;
-    s.overTarget = s.count === 5 ? clamp((r.spread - 0.6) / 0.4) : 0;
-    s.yawTarget = s.count === 5 ? -r.roll * 2.2 : null;
-  } else if (s.mode === "pinch") {
+  // 数指模式：指数衰减投票。每个手指数的票每帧 ×0.8、当前读数 +1，
+  // 稳定的多数大约 4–5 帧就能生效；个别帧识别抖动只会投出 1 票，翻不了盘。
+  // 捏合时其他三指收起，不参与数指投票，避免两指姿势把阶段拨到 2。
+  for (let k = 0; k < 6; k++) s.countW[k] *= 0.8;
+  if (!pinchPose) s.countW[r.count] += 1;
+  const best = s.countW.indexOf(Math.max(...s.countW));
+  if (best !== s.count && s.countW[best] > 2.6) s.count = best;
+
+  if (s.mode === "pinch") {
     s.tau = 90;
     // 两指：张开多少，花就开多少，连续变化
     s.target = r.pinch * PINCH_MAX;
     s.overTarget = 0;
     s.yawTarget = null;
-  } else {
+  } else if (s.mode === "palm") {
     s.tau = 90;
     // 五指：从七成继续开到全开；张到最大时花瓣开始飘落
     s.target = PINCH_MAX + (1 - PINCH_MAX) * clamp(r.spread / 0.7);
     s.overTarget = clamp((r.spread - 0.6) / 0.4);
     s.yawTarget = -r.roll * 2.2; // 转动手掌，花跟着转身
+  } else {
+    s.tau = 320;
+    // 数指：0–5 指数直接落到六个阶段
+    s.target = stages[s.count] ?? s.count / 5;
+    s.overTarget = s.count === 5 ? clamp((r.spread - 0.6) / 0.4) : 0;
+    s.yawTarget = s.count === 5 ? -r.roll * 2.2 : null;
   }
 
-  $("m" + i).textContent = stages
-    ? `数指 · 第 ${s.count} 阶段`
+  $("m" + i).textContent = s.mode === "pinch"
+    ? `捏合 · ${Math.round(r.pinch * 100)}%`
     : s.mode === "palm"
       ? `展掌 · ${Math.round(r.spread * 100)}%`
-      : `捏合 · ${Math.round(r.pinch * 100)}%`;
+      : `数指 · 第 ${s.count} 阶段`;
   $("m" + i).className = "on";
 }
 
@@ -1914,7 +1921,7 @@ function updateExperience(now) {
   if (now - lastExperienceUpdate < 120) return;
   lastExperienceUpdate = now;
   const f = FLOWERS[slots[0].type];
-  $("gestureHint").textContent = demoMode ? "正在演示 · 随时可以亲手控制" : f.stages ? "伸出 0–5 根手指，逐级看花开。" : "两指捏合，花随手开。";
+  $("gestureHint").textContent = demoMode ? "正在演示 · 随时可以亲手控制" : "捏合连续开合，数指分级绽放。";
   $("assetStatus").textContent = f.images ? (f.assetState === "loading" ? "花卉画面加载中" : "工笔花") : "立体花";
   $("duoBtn").setAttribute("aria-pressed", String(forceDuo || duo > 0.5));
   const amount = Math.round(clamp(slots[0].bloom) * 100);

@@ -47,7 +47,7 @@ await check('Normal render path updates controls without swallowed exceptions',a
 await check('Invalid URL input cannot poison bloom state with NaN',async()=>{const h=makeHarness({search:'?bloom=abc&over=abc&duo=Rose&bloom2=abc'});await settle();assert.equal(h.initError,null);assert.equal(h.eval('slots.every(s=>Number.isFinite(s.bloom)&&Number.isFinite(s.over))'),true)});
 await check('All literal element references exist and IDs are unique',async()=>{const ids=[...html.matchAll(/\bid="([^"]+)"/g)].map(x=>x[1]);assert.equal(ids.length,new Set(ids).size);for(const m of sourceText.matchAll(/\$\("([^"]+)"\)/g))assert.ok(ids.includes(m[1]),m[1]);assert.ok(fs.existsSync(path.resolve(__dirname,'../lib/experience.css')))});
 await check('Petal profiles, translucency and vein details render for every flower',async()=>{const h=makeHarness();await settle();const profile=h.eval('PETAL_PROFILES');assert.equal(Object.keys(profile).length,5);for(const name of ['Lotus','Lily','Rose','Camellia','Cherry Blossom'])assert.ok(profile[name]&&profile[name].rim>0);for(let type=0;type<5;type++){const pt=h.eval('(()=>{const C=camera(500,300,260,.4,24);const p=PETAL_PROFILES[FLOWERS['+type+'].name];return petal(C,{bx:0,by:0,bz:0,phi:.7,theta:.8,curl:.2,L:.5,W:.2,p:.7,q:.8,notch:0,cup:.4,ruffle:0,seed:'+type+',shape:p.shape,skew:p.skew,tip:p.tip,rim:p.rim})})()');assert.ok(pt.left.length===17&&pt.right.length===17&&pt.spine.length===17);assert.ok(pt.left.every(x=>x.slice(0,3).every(Number.isFinite)));assert.equal(pt.rim,profile[h.eval('FLOWERS['+type+'].name')].rim)}assert.ok(sourceText.includes('尖端透光'));assert.ok(sourceText.includes('一侧副脉'))});
-await check('Lily leaves are broad, folded and anatomically detailed',async()=>{const h=makeHarness();await settle();const leafDefs=h.eval('FLOWERS.find(f=>f.name==="Lily").stem.leaves');assert.ok(leafDefs.length>=6);assert.ok(leafDefs.every(l=>l.wid>=0.09));const pt=h.eval('(()=>{const C=camera(500,300,260,.4,24);return leaf(C,{bx:0,by:0,bz:0,phi:.7,theta:.9,curl:.3,L:.5,W:.11,seed:1,fold:.48})})()');assert.equal(pt.left.length,17);assert.ok(pt.left.every(x=>x.slice(0,3).every(Number.isFinite)));assert.ok(sourceText.includes('function leaf(C, o)'));assert.ok(sourceText.includes('function drawLeaf'));assert.ok(sourceText.includes('主叶脉'))});
+await check('Lily leaves are broad, folded and anatomically detailed',async()=>{const h=makeHarness();await settle();const leafDefs=h.eval('FLOWERS.find(f=>f.name==="Lily").stem.leaves');assert.ok(leafDefs.length>=4);assert.ok(leafDefs.every(l=>l.wid>=0.09));const pt=h.eval('(()=>{const C=camera(500,300,260,.4,24);return leaf(C,{bx:0,by:0,bz:0,phi:.7,theta:.9,curl:.3,L:.5,W:.11,seed:1,fold:.48})})()');assert.equal(pt.left.length,17);assert.ok(pt.left.every(x=>x.slice(0,3).every(Number.isFinite)));assert.ok(sourceText.includes('function leaf(C, o)'));assert.ok(sourceText.includes('function drawLeaf'));assert.ok(sourceText.includes('主叶脉'))});
 await check('Finger counting is precise and tolerates detection flickers',async()=>{const h=makeHarness();await settle();const out=h.eval(`(()=>{
   const mk=(ext)=>{const p=[];for(let i=0;i<21;i++)p.push({x:.5,y:.6});
     p[0]={x:.5,y:.85};p[2]={x:.42,y:.62};p[5]={x:.44,y:.5};p[9]={x:.5,y:.48};p[13]={x:.56,y:.5};p[17]={x:.62,y:.54};
@@ -72,6 +72,28 @@ await check('Finger counting is precise and tolerates detection flickers',async(
   if(Math.abs(slots[0].target-FLOWERS[1].stages[4])>1e-9)return 'stage target wrong';
   return 'ok'})()`);
 assert.equal(out,'ok',out)});
+await check('Every flower supports both pinch and finger-count gestures',async()=>{const h=makeHarness();await settle();const out=h.eval(`(()=>{
+  const mk=(ext)=>{const p=[];for(let i=0;i<21;i++)p.push({x:.5,y:.6});
+    p[0]={x:.5,y:.85};p[2]={x:.42,y:.62};p[5]={x:.44,y:.5};p[9]={x:.5,y:.48};p[13]={x:.56,y:.5};p[17]={x:.62,y:.54};
+    const curled=[[4,.44,.54],[8,.48,.62],[12,.5,.64],[16,.54,.62],[20,.56,.62]];
+    const open=[[4,.3,.76],[8,.44,.28],[12,.5,.26],[16,.56,.28],[20,.64,.34]];
+    for(let i=0;i<5;i++){const [j,x,y]=ext[i]?open[i]:curled[i];p[j]={x,y};}
+    return p;};
+  const pinch=mk([1,1,0,0,0]);
+  const count=mk([0,1,1,1,0]);
+  const one=mk([0,1,0,0,0]);
+  const results=[];
+  for(let type=0;type<FLOWERS.length;type++){
+    slots[0]=makeSlot(type);
+    for(let f=0;f<10;f++)applyHand(0,pinch,2000+f*33);
+    const pinchTarget=slots[0].target,pinchMode=slots[0].mode;
+    for(let f=0;f<12;f++)applyHand(0,count,2400+f*33);
+    const countTarget=slots[0].target,countMode=slots[0].mode,countN=slots[0].count;
+    for(let f=0;f<12;f++)applyHand(0,one,2800+f*33);
+    results.push({type,pinchTarget,pinchMode,countTarget,countMode,count:countN,oneTarget:slots[0].target,oneMode:slots[0].mode,oneCount:slots[0].count,stage:FLOWERS[type].stages[3],oneStage:FLOWERS[type].stages[1]});
+  }
+  return results})()`);
+for(const r of out){assert.equal(r.pinchMode,'pinch','flower '+r.type+' pinch mode');assert.ok(r.pinchTarget>0.3&&r.pinchTarget<=0.7+1e-9,'flower '+r.type+' pinch target');assert.equal(r.countMode,'count','flower '+r.type+' count mode');assert.equal(r.count,3,'flower '+r.type+' count');assert.ok(Math.abs(r.countTarget-r.stage)<1e-9,'flower '+r.type+' stage target');assert.equal(r.oneMode,'count','flower '+r.type+' single-finger mode');assert.equal(r.oneCount,1,'flower '+r.type+' single-finger count');assert.ok(Math.abs(r.oneTarget-r.oneStage)<1e-9,'flower '+r.type+' single-finger stage')}});
 await check('Duo flowers require two hands unless manually forced',async()=>{const h=makeHarness();await settle();
 // 只有一只手（slot 1 从未被识别）：即便 loop 跑多个周期，duo 必须保持 0
 h.eval('slots[0].seen=9000;slots[1].seen=-1e9');
@@ -91,3 +113,4 @@ assert.ok(h.eval('duo')>0.9,'forced duo must stay on')});
 
 console.log('\n'+passed+' checks passed. Mocked logic only; live camera and browser layout require manual QA.');
 })().catch(e=>{console.error(e);process.exitCode=1});
+
