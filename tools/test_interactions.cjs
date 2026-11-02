@@ -49,6 +49,19 @@ await check('All literal element references exist and IDs are unique',async()=>{
 await check('Petal profiles, translucency and vein details render for every flower',async()=>{const h=makeHarness();await settle();const profile=h.eval('PETAL_PROFILES');assert.equal(Object.keys(profile).length,5);for(const name of ['Lotus','Lily','Rose','Camellia','Cherry Blossom'])assert.ok(profile[name]&&profile[name].rim>0);for(let type=0;type<5;type++){const pt=h.eval('(()=>{const C=camera(500,300,260,.4,24);const p=PETAL_PROFILES[FLOWERS['+type+'].name];return petal(C,{bx:0,by:0,bz:0,phi:.7,theta:.8,curl:.2,L:.5,W:.2,p:.7,q:.8,notch:0,cup:.4,ruffle:0,seed:'+type+',shape:p.shape,skew:p.skew,tip:p.tip,rim:p.rim})})()');assert.ok(pt.left.length===17&&pt.right.length===17&&pt.spine.length===17);assert.ok(pt.left.every(x=>x.slice(0,3).every(Number.isFinite)));assert.equal(pt.rim,profile[h.eval('FLOWERS['+type+'].name')].rim)}assert.ok(sourceText.includes('尖端透光'));assert.ok(sourceText.includes('一侧副脉'))});
 await check('Lily leaves are broad, folded and anatomically detailed',async()=>{const h=makeHarness();await settle();const leafDefs=h.eval('FLOWERS.find(f=>f.name==="Lily").stem.leaves');assert.ok(leafDefs.length>=6);assert.ok(leafDefs.every(l=>l.wid>=0.09));const pt=h.eval('(()=>{const C=camera(500,300,260,.4,24);return leaf(C,{bx:0,by:0,bz:0,phi:.7,theta:.9,curl:.3,L:.5,W:.11,seed:1,fold:.48})})()');assert.equal(pt.left.length,17);assert.ok(pt.left.every(x=>x.slice(0,3).every(Number.isFinite)));assert.ok(sourceText.includes('function leaf(C, o)'));assert.ok(sourceText.includes('function drawLeaf'));assert.ok(sourceText.includes('主叶脉'))});
 await check('Flowers and foliage keep the fuller visual treatment',async()=>{const h=makeHarness();await settle();assert.ok(h.eval('PETAL_FULLNESS>=1.2'));assert.ok(h.eval('LEAF_FULLNESS>=1.25'));assert.ok(h.eval('FLOWERS.find(f=>f.name==="Lotus").layers.reduce((n,x)=>n+x.n,0)>=28'));assert.ok(h.eval('FLOWERS.find(f=>f.name==="Rose").stem.leaves.length>=4'));assert.ok(h.eval('FLOWERS.filter(f=>f.foliage?.length).length>=3'));assert.ok(sourceText.includes('中段柔光让花瓣鼓起来'))});
+await check('Leaf veins stay on the leaf body',async()=>{const h=makeHarness();await settle();const out=h.eval(`(()=>{
+  const C=camera(500,300,260,.4,24);
+  for(const fold of [.22,.35,.5]){
+    const pt=leaf(C,{bx:0,by:0,bz:0,phi:.7,theta:1.2,curl:.3,L:.5,W:.11,seed:1,fold});
+    if(!pt.mid||pt.mid.length!==pt.left.length)return 'leaf has no mid line';
+    for(let k=0;k<pt.mid.length;k++){
+      const mx=(pt.left[k][0]+pt.right[k][0])/2,my=(pt.left[k][1]+pt.right[k][1])/2;
+      // 透视投影下 3D 中点不落在 2D 中点，留几个像素容差即可
+      if(Math.hypot(pt.mid[k][0]-mx,pt.mid[k][1]-my)>8)return 'mid leaves the leaf body at '+k;
+    }
+  }
+  return 'ok'})()`);
+assert.equal(out,'ok',out)});
 await check('Finger counting is precise and tolerates detection flickers',async()=>{const h=makeHarness();await settle();const out=h.eval(`(()=>{
   const mk=(ext)=>{const p=[];for(let i=0;i<21;i++)p.push({x:.5,y:.6});
     p[0]={x:.5,y:.85};p[2]={x:.42,y:.62};p[5]={x:.44,y:.5};p[9]={x:.5,y:.48};p[13]={x:.56,y:.5};p[17]={x:.62,y:.54};
