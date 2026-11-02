@@ -36,6 +36,7 @@ await check('Camera denial retains enabled retry and can retry twice',async()=>{
 await check('GPU initialization failure falls back to CPU',async()=>{const h=makeHarness({cameraOK:true,failGPU:true});await settle();await h.eval('startCamera()');assert.deepEqual(h.stats.delegates,['GPU','CPU']);assert.equal(h.eval('cameraState'),'running');assert.equal(h.get('notice').hidden,true);h.eval('stopCamera()');assert.equal(h.stats.tracksStopped,1);assert.equal(h.stats.modelsClosed,1);assert.equal(h.get('notice').hidden,false)});
 await check('Recognition exceptions do not stop the render loop',async()=>{const h=makeHarness();await settle();h.eval('landmarker={detectForVideo(){throw Error("GPU context lost")}};video.readyState=4;video.currentTime=1');h.raf.length=0;assert.doesNotThrow(()=>h.eval('loop(1000)'));assert.equal(h.raf.length,1);for(const t of [1600,2200]){h.eval('video.currentTime++');h.eval('loop('+t+')')}assert.equal(h.eval('cameraState'),'error');assert.equal(h.eval('landmarker'),null)});
 await check('Hand identities persist through crossing and single-hand loss',async()=>{const h=makeHarness();await settle();const out=h.eval('(()=>{const hand=(x)=>Array.from({length:21},()=>({x,y:.5}));const labels=[[{categoryName:"Left"}],[{categoryName:"Right"}]];assignHands([hand(.8),hand(.2)],1000,labels);const cross=assignHands([hand(.2),hand(.8)],1100,labels).map(x=>x[0]);const remaining=assignHands([hand(.8)],1200,[labels[1]]).map(x=>x[0]);return {cross,remaining}})()');assert.equal(JSON.stringify(out.cross),'[0,1]');assert.equal(JSON.stringify(out.remaining),'[1]')});
+await check('Duo binds by screen side when the second hand arrives later',async()=>{const h=makeHarness();await settle();const out=h.eval('(()=>{const hand=(x)=>Array.from({length:21},()=>({x,y:.5}));assignHands([hand(.2)],1000,[[{categoryName:"Right"}]]);assignHands([hand(.8),hand(.2)],1100,[[{categoryName:"Left"}],[{categoryName:"Right"}]]);return [slots[0].track.x,slots[1].track.x]})()');assert.equal(JSON.stringify(out),'[0.8,0.2]')});
 await check('Hands lost from view stop spawning petals and retain bloom',async()=>{const h=makeHarness();await settle();h.eval('video.readyState=4;video.currentTime=1;landmarker={detectForVideo:()=>({landmarks:[]})};slots[0].track={t:0};slots[0].seen=0;slots[0].overTarget=1;slots[0].target=.6;detect(1500)');assert.equal(h.eval('slots[0].overTarget'),0);assert.equal(h.eval('slots[0].target'),.6);assert.equal(h.eval('slots[0].track'),null)});
 await check('Missing masks fall back to procedural flower',async()=>{const h=makeHarness({images:'jpg-only'});await settle();assert.equal(h.eval('FLOWERS[0].images'),null);assert.equal(h.eval('FLOWERS[0].assetState'),'error')});
 await check('Complete frames are loaded lazily and stay within decoded budget',async()=>{const h=makeHarness({images:'all',noAtlas:true});await settle();assert.equal(h.eval('FLOWERS.filter(f=>f.images).length'),1);h.eval('toggleDuo()');await settle();assert.equal(h.eval('FLOWERS.filter(f=>f.images).length'),2);assert.ok(h.eval('[...frameCache.values()].reduce((a,x)=>a+x.bytes,0)<=MAX_FRAME_CACHE'));assert.ok(h.eval('FLOWERS[0].images.length<=48'));h.eval('chooseFlower(0,2)');await settle();assert.equal(h.eval('FLOWERS[0].images'),null);assert.ok(h.stats.bitmapClosed>0)});
@@ -80,20 +81,23 @@ await check('Every flower supports both pinch and finger-count gestures',async()
     for(let i=0;i<5;i++){const [j,x,y]=ext[i]?open[i]:curled[i];p[j]={x,y};}
     return p;};
   const pinch=mk([1,1,0,0,0]);
-  const count=mk([0,1,1,1,0]);
-  const one=mk([0,1,0,0,0]);
+  const counts=[[0,0,0,0,0],[0,1,0,0,0],[0,1,1,0,0],[0,1,1,1,0],[0,1,1,1,1],[1,1,1,1,1]];
   const results=[];
   for(let type=0;type<FLOWERS.length;type++){
     slots[0]=makeSlot(type);
     for(let f=0;f<10;f++)applyHand(0,pinch,2000+f*33);
     const pinchTarget=slots[0].target,pinchMode=slots[0].mode;
-    for(let f=0;f<12;f++)applyHand(0,count,2400+f*33);
-    const countTarget=slots[0].target,countMode=slots[0].mode,countN=slots[0].count;
-    for(let f=0;f<12;f++)applyHand(0,one,2800+f*33);
-    results.push({type,pinchTarget,pinchMode,countTarget,countMode,count:countN,oneTarget:slots[0].target,oneMode:slots[0].mode,oneCount:slots[0].count,stage:FLOWERS[type].stages[3],oneStage:FLOWERS[type].stages[1]});
+    const countResults=[];
+    for(let n=0;n<6;n++){
+      slots[0]=makeSlot(type);
+      const hand=mk(counts[n]);
+      for(let f=0;f<10;f++)applyHand(0,hand,2400+n*400+f*33);
+      countResults.push({n,mode:slots[0].mode,count:slots[0].count,target:slots[0].target,stage:FLOWERS[type].stages[n]});
+    }
+    results.push({type,pinchTarget,pinchMode,countResults});
   }
   return results})()`);
-for(const r of out){assert.equal(r.pinchMode,'pinch','flower '+r.type+' pinch mode');assert.ok(r.pinchTarget>0.3&&r.pinchTarget<=0.7+1e-9,'flower '+r.type+' pinch target');assert.equal(r.countMode,'count','flower '+r.type+' count mode');assert.equal(r.count,3,'flower '+r.type+' count');assert.ok(Math.abs(r.countTarget-r.stage)<1e-9,'flower '+r.type+' stage target');assert.equal(r.oneMode,'count','flower '+r.type+' single-finger mode');assert.equal(r.oneCount,1,'flower '+r.type+' single-finger count');assert.ok(Math.abs(r.oneTarget-r.oneStage)<1e-9,'flower '+r.type+' single-finger stage')}});
+for(const r of out){assert.equal(r.pinchMode,'pinch','flower '+r.type+' pinch mode');assert.ok(r.pinchTarget>0.3&&r.pinchTarget<=0.7+1e-9,'flower '+r.type+' pinch target');for(const c of r.countResults){assert.equal(c.mode,c.n===5?'palm':'count','flower '+r.type+' count '+c.n+' mode');assert.equal(c.count,c.n,'flower '+r.type+' count '+c.n);assert.ok(Math.abs(c.target-c.stage)<1e-9,'flower '+r.type+' count '+c.n+' stage target')}}});
 await check('Duo flowers require two hands unless manually forced',async()=>{const h=makeHarness();await settle();
 // 只有一只手（slot 1 从未被识别）：即便 loop 跑多个周期，duo 必须保持 0
 h.eval('slots[0].seen=9000;slots[1].seen=-1e9');

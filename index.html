@@ -385,7 +385,7 @@
   <form method="dialog"><button class="dialog-close" aria-label="关闭操作指引">关闭</button></form>
   <h2 id="helpTitle">从举手，到花开</h2>
   <p class="help-intro">面对镜头，手掌完整入镜。单手控制一朵花，双手分别控制两朵花。</p>
-  <ol class="guide-steps"><li><strong>01 · 举手入镜</strong><p>开启摄像头并允许权限，保持光线充足，等待手部骨架出现。</p></li><li><strong>02 · 让花开放</strong><p>所有花种通用：收起其他三指，用拇指与食指捏合连续开合；或伸出 0–5 根手指，按六个阶段开放。</p></li><li><strong>03 · 展掌与换花</strong><p>展开手掌欣赏盛放，倾斜手掌转动花朵。横向快速挥手切换花种。</p></li></ol>
+  <ol class="guide-steps"><li><strong>01 · 举手入镜</strong><p>开启摄像头并允许权限，保持光线充足，等待手部骨架出现。</p></li><li><strong>02 · 让花开放</strong><p>所有花种通用：收起其他三指，用拇指与食指捏合连续开合；或伸出 0–5 根手指，按六个阶段开放。数 2 用食指+中指，拇指+食指为捏合。</p></li><li><strong>03 · 展掌与换花</strong><p>展开手掌欣赏盛放，倾斜手掌转动花朵。横向快速挥手切换花种。</p></li></ol>
   <p class="help-note">无摄像头也能体验：使用手动滑杆或自动演示。双手首次按画面位置绑定，持续追踪期间尽量保持手部可见。</p>
   <p class="help-keys">快捷键：空格 演示 · ← → 换花 · 0–5 开度 · D 双花 · V 竖屏 · H 纯净画面</p>
 </dialog>
@@ -1657,8 +1657,8 @@ function applyHand(i, h, now) {
     s.yawTarget = null;
   } else if (s.mode === "palm") {
     s.tau = 90;
-    // 五指：从七成继续开到全开；张到最大时花瓣开始飘落
-    s.target = PINCH_MAX + (1 - PINCH_MAX) * clamp(r.spread / 0.7);
+    // 五指：直接落到第五阶段（完全盛放）；张得越开，飘瓣和转动越明显
+    s.target = stages[5] ?? 1;
     s.overTarget = clamp((r.spread - 0.6) / 0.4);
     s.yawTarget = -r.roll * 2.2; // 转动手掌，花跟着转身
   } else {
@@ -1731,7 +1731,15 @@ function assignHands(hands, now, labels = []) {
     if (!slots.some(s => s.track)) pairs = [[0, o]];
   } else {
     const [a, b] = observations;
-    pairs = cost(0, a) + cost(1, b) <= cost(0, b) + cost(1, a) ? [[0, a], [1, b]] : [[0, b], [1, a]];
+    // 只有双手都在持续追踪中，才按身份/位置代价配对；首次同框或有一侧
+    // 的追踪已过期时，直接按画面左右重绑。画面是镜像的，原始画面 x 越大
+    // 越靠屏幕左侧，所以 x 大的手归左侧花（slot 0）。
+    const fresh = (s) => s.track && now - s.track.t <= 1200;
+    if (!fresh(slots[0]) || !fresh(slots[1])) {
+      pairs = a.x > b.x ? [[0, a], [1, b]] : [[0, b], [1, a]];
+    } else {
+      pairs = cost(0, a) + cost(1, b) <= cost(0, b) + cost(1, a) ? [[0, a], [1, b]] : [[0, b], [1, a]];
+    }
   }
   return pairs.map(([i, o]) => {
     const previous = slots[i].track;
