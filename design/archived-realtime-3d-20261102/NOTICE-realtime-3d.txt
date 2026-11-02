@@ -1,0 +1,18 @@
+第三方组件与许可
+==================================================
+
+1. Google MediaPipe Tasks Vision 0.10.14 与 Hand Landmarker 模型
+位置：lib/vision_bundle.mjs、lib/wasm/、models/hand_landmarker.task
+版权：Google LLC；Apache License 2.0，全文见 LICENSE-Apache-2.0.txt。
+组件与模型未修改。
+
+2. Three.js 0.187.0
+位置：lib/vendor/three/
+版权：Three.js Authors；MIT，全文见 lib/vendor/three/THREE-LICENSE.txt。
+构建文件未修改，来源：npm three@0.187.0。
+
+3. 界面字体
+使用本机宋体类字体和系统无衬线字体，不打包字体文件，不请求联网字体。
+
+花卉运行模型由本项目程序化三维网格构成，不引用照片、图集或图像序列。
+旧 AI 图片与旧视觉概念仅作为弃用方案归档在 design/，不参与运行。
