@@ -72,6 +72,25 @@ await check('Finger counting is precise and tolerates detection flickers',async(
   if(Math.abs(slots[0].target-FLOWERS[1].stages[4])>1e-9)return 'stage target wrong';
   return 'ok'})()`);
 assert.equal(out,'ok',out)});
+await check('Every flower supports both finger-count and pinch gestures',async()=>{const h=makeHarness();await settle();const out=h.eval(`(()=>{
+  function makeHand(thumb,idx){const p=[];for(let i=0;i<21;i++)p.push({x:.5,y:.6});
+    p[0]={x:.5,y:.85};p[2]={x:.42,y:.62};p[5]={x:.44,y:.5};p[9]={x:.5,y:.48};p[13]={x:.56,y:.5};p[17]={x:.62,y:.54};
+    p[4]={x:thumb?0.3:0.44,y:thumb?0.76:0.54};p[8]={x:idx?0.44:0.48,y:idx?0.28:0.62};
+    for(const j of [12,16,20])p[j]={x:p[j].x,y:0.62};return p;}
+  for(const type of [0,2]){ // 玫瑰(2)、荷花(0)：原为纯捏合
+    chooseFlower(0,type);let t=3000;
+    for(let f=0;f<12;f++)applyHand(0,makeHand(true,true),t+f*33);
+    if(slots[0].mode!=='pinch')return type+' pinch not recognized';
+    t=4000;slots[0].countW=[0,0,0,0,0,0];
+    for(let f=0;f<12;f++)applyHand(0,makeHand(false,true),t+f*33);
+    if(slots[0].mode!=='count')return type+' count not recognized';
+    if(slots[0].count!==1)return type+' wrong stage '+slots[0].count;
+  }
+  chooseFlower(0,4);let t=5000; // 樱花：原为数指
+  for(let f=0;f<14;f++)applyHand(0,makeHand(true,true),t+f*33);
+  if(slots[0].mode!=='pinch')return 'sakura pinch not recognized';
+  return 'ok'})()`);
+assert.equal(out,'ok',out)});
 
 console.log('\n'+passed+' checks passed. Mocked logic only; live camera and browser layout require manual QA.');
 })().catch(e=>{console.error(e);process.exitCode=1});
