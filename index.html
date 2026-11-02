@@ -432,8 +432,8 @@ const FLOWERS = [
     view: 24, lift: 0.1, stages: [0, 0.3, 0.5, 0.7, 0.85, 1],
     stem: { len: 1.25, bend: 0.12, w: 0.028, c: "#55703a" },
     foliage: [
-      { phi: 210, len: 0.56, wid: 0.25, tilt: 78, curl: -8, fold: 0.22 },
-      { phi: 25, len: 0.5, wid: 0.23, tilt: 76, curl: -6, fold: 0.24 },
+      { phi: 210, len: 0.56, wid: 0.25, tilt: 82, curl: -8, fold: 0.22 },
+      { phi: 25, len: 0.5, wid: 0.23, tilt: 80, curl: -6, fold: 0.24 },
     ],
     layers: [
       P({ n: 10, len: 0.5, wid: 0.19, p: 0.68, q: 0.9, t0: 9, t1: 80, curl: 12, cup: 0.5, c0: "#e27d98", c1: "#fdf1f3" }),
@@ -500,11 +500,11 @@ const FLOWERS = [
     view: 60, lift: 0,
     stem: null,
     foliage: [
-      { phi: 15, len: 0.43, wid: 0.16, tilt: 74, curl: -5, fold: 0.34 },
-      { phi: 92, len: 0.4, wid: 0.15, tilt: 74, curl: -4, fold: 0.36 },
-      { phi: 170, len: 0.44, wid: 0.17, tilt: 74, curl: -6, fold: 0.33 },
-      { phi: 245, len: 0.39, wid: 0.15, tilt: 74, curl: -4, fold: 0.36 },
-      { phi: 315, len: 0.42, wid: 0.16, tilt: 74, curl: -5, fold: 0.34 },
+      { phi: 15, len: 0.43, wid: 0.16, tilt: 84, curl: -5, fold: 0.34 },
+      { phi: 92, len: 0.4, wid: 0.15, tilt: 82, curl: -4, fold: 0.36 },
+      { phi: 170, len: 0.44, wid: 0.17, tilt: 85, curl: -6, fold: 0.33 },
+      { phi: 245, len: 0.39, wid: 0.15, tilt: 82, curl: -4, fold: 0.36 },
+      { phi: 315, len: 0.42, wid: 0.16, tilt: 84, curl: -5, fold: 0.34 },
     ],
     layers: [
       P({ n: 8, len: 0.44, wid: 0.27, p: 0.5, q: 0.4, t0: 8, t1: 86, cup: 0.35, c0: "#d93a46", c1: "#8a1626" }),
@@ -521,9 +521,9 @@ const FLOWERS = [
     view: 72, lift: 0,
     stem: null,
     foliage: [
-      { phi: 40, len: 0.34, wid: 0.12, tilt: 74, curl: -4, fold: 0.32 },
-      { phi: 155, len: 0.32, wid: 0.115, tilt: 74, curl: -3, fold: 0.34 },
-      { phi: 275, len: 0.33, wid: 0.12, tilt: 74, curl: -4, fold: 0.33 },
+      { phi: 40, len: 0.34, wid: 0.12, tilt: 85, curl: -4, fold: 0.32 },
+      { phi: 155, len: 0.32, wid: 0.115, tilt: 83, curl: -3, fold: 0.34 },
+      { phi: 275, len: 0.33, wid: 0.12, tilt: 84, curl: -4, fold: 0.33 },
     ],
     layers: [
       P({ n: 5, len: 0.42, wid: 0.27, p: 0.55, q: 0.55, notch: 0.12, t0: 10, t1: 84, cup: 0.22, c0: "#fde8ee", c1: "#f2a3ba" }),
@@ -1057,7 +1057,7 @@ function leaf(C, o) {
   const { bx, by, bz, phi, theta, curl, L, W, seed, fold = 0.35 } = o;
   const rx = Math.cos(phi), rz = Math.sin(phi);
   const tx = -Math.sin(phi), tz = Math.cos(phi);
-  const left = [], right = [], spine = [], mid = [];
+  const left = [], right = [], spine = [];
   let px = bx, py = by, pz = bz;
   for (let k = 0; k <= SEG; k++) {
     const u = k / SEG;
@@ -1074,25 +1074,21 @@ function leaf(C, o) {
     const w = width * tip * fullness;
     left.push(proj(C, px - tx * w + nx * (rib + wrinkle), py + ny * (rib + wrinkle), pz - tz * w + nz * (rib + wrinkle)));
     right.push(proj(C, px + tx * w + nx * (rib - wrinkle), py + ny * (rib - wrinkle), pz + tz * w + nz * (rib - wrinkle)));
-    // 叶身中线：叶片整体沿法线偏移了 rib，叶脉必须画在这条线上，否则会飘出叶面。
-    mid.push(proj(C, px + nx * rib, py + ny * rib, pz + nz * rib));
     spine.push(proj(C, px, py, pz));
   }
   let z = 0;
   for (const pt of spine) z += pt[2];
-  return { left, right, spine, mid, z: z / spine.length, lit: 1, inner: true, tip: mid[SEG], rim: 0.05 };
+  return { left, right, spine, z: z / spine.length, lit: 1, inner: true, tip: spine[SEG], rim: 0.05 };
 }
 
 function drawLeaf(g, pt, R) {
-  const mid = pt.mid || pt.spine;
   g.beginPath();
   g.moveTo(pt.left[0][0], pt.left[0][1]);
   for (let k = 1; k < pt.left.length; k++) g.lineTo(pt.left[k][0], pt.left[k][1]);
-  // 叶尖两侧在中线上收成一点；不再绕回未偏移的 spine，避免尖端拉出一根细刺
-  g.lineTo(mid[mid.length - 1][0], mid[mid.length - 1][1]);
-  for (let k = pt.right.length - 2; k >= 0; k--) g.lineTo(pt.right[k][0], pt.right[k][1]);
+  g.lineTo(pt.spine[pt.spine.length - 1][0], pt.spine[pt.spine.length - 1][1]);
+  for (let k = pt.right.length - 1; k >= 0; k--) g.lineTo(pt.right[k][0], pt.right[k][1]);
   g.closePath();
-  const a = mid[0], b = pt.tip;
+  const a = pt.spine[0], b = pt.tip;
   const grad = g.createLinearGradient(a[0], a[1], b[0], b[1]);
   grad.addColorStop(0, "#29451f");
   grad.addColorStop(0.32, "#557d35");
@@ -1100,8 +1096,8 @@ function drawLeaf(g, pt, R) {
   grad.addColorStop(1, "#a2c26a");
   g.fillStyle = grad;
   g.fill();
-  const midIndex = Math.round(mid.length * 0.48);
-  const belly = mid[midIndex];
+  const midIndex = Math.round(pt.spine.length * 0.48);
+  const belly = pt.spine[midIndex];
   const sheen = g.createRadialGradient(belly[0], belly[1], 0, belly[0], belly[1], R * 0.2);
   sheen.addColorStop(0, "rgba(226,245,176,0.18)");
   sheen.addColorStop(0.6, "rgba(172,211,112,0.05)");
@@ -1112,28 +1108,24 @@ function drawLeaf(g, pt, R) {
   g.strokeStyle = "rgba(22,38,16,0.28)";
   g.lineWidth = Math.max(1, R * 0.004);
   g.stroke();
-  // 主叶脉：贴着叶身中线走，基部宽、叶尖细
+  // 主叶脉：基部宽、叶尖细
   g.beginPath();
-  g.moveTo(mid[1][0], mid[1][1]);
-  for (let k = 2; k < mid.length - 1; k++) g.lineTo(mid[k][0], mid[k][1]);
+  g.moveTo(pt.spine[1][0], pt.spine[1][1]);
+  for (let k = 2; k < pt.spine.length - 1; k++) g.lineTo(pt.spine[k][0], pt.spine[k][1]);
   g.strokeStyle = "rgba(213,235,164,0.42)";
   g.lineWidth = Math.max(1, R * 0.0045);
   g.stroke();
-  // 两侧副脉：细、淡，从中线斜向叶缘，只到叶缘七成处，像工笔的短筋
-  g.strokeStyle = "rgba(205,230,158,0.18)";
-  g.lineWidth = Math.max(0.6, R * 0.0016);
-  for (let k = 4; k < mid.length - 4; k += 3) {
-    const s = mid[k];
-    for (const edge of [pt.left[k], pt.right[k]]) {
-      g.beginPath();
-      g.moveTo(s[0], s[1]);
-      g.lineTo(s[0] + (edge[0] - s[0]) * 0.72, s[1] + (edge[1] - s[1]) * 0.72);
-      g.stroke();
-    }
+  // 两侧副脉
+  for (let k = 3; k < pt.spine.length - 3; k += 3) {
+    const l = pt.left[k], r = pt.right[k], s = pt.spine[k];
+    g.beginPath(); g.moveTo(s[0], s[1]); g.lineTo(l[0], l[1]); g.stroke();
+    g.beginPath(); g.moveTo(s[0], s[1]); g.lineTo(r[0], r[1]); g.stroke();
   }
+  g.strokeStyle = "rgba(205,230,158,0.18)";
+  g.lineWidth = Math.max(0.5, R * 0.0015);
   // 叶尖高光
   g.beginPath();
-  g.moveTo(mid[mid.length - 3][0], mid[mid.length - 3][1]);
+  g.moveTo(pt.spine[pt.spine.length - 3][0], pt.spine[pt.spine.length - 3][1]);
   g.lineTo(b[0], b[1]);
   g.strokeStyle = "rgba(230,244,194,0.45)";
   g.lineWidth = Math.max(0.7, R * 0.0025);
@@ -1151,10 +1143,8 @@ function drawFlower3D(g, slot, cx, cy, R, alpha, now) {
 
   // 花头后方的叶片先入队，作为一圈深浅错落的绿色衬底。
   (f.foliage || []).forEach((lf, li) => {
-    // 叶片从花心外移一段（lf.base），叶尖才不会被花瓣完全盖住。
-    const base = lf.base ?? 0.2;
     const pt = leaf(C, {
-      bx: Math.cos(lf.phi * DEG) * base, by: -0.06, bz: Math.sin(lf.phi * DEG) * base,
+      bx: 0, by: -0.025, bz: 0,
       phi: lf.phi * DEG, theta: lf.tilt * DEG, curl: lf.curl * DEG,
       L: lf.len, W: lf.wid, seed: 40 + li, fold: lf.fold || 0.34,
     });
