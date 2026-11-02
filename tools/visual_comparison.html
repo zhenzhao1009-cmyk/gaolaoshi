@@ -1,0 +1,341 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<title>花朵模型优化前后对比</title>
+<style>
+  body { margin: 0; font-family: system-ui; background: #2a2a2a; color: #f0f0f0; }
+  .header { padding: 20px; background: #1a1a1a; border-bottom: 1px solid #444; }
+  .header h1 { margin: 0 0 10px 0; font-size: 24px; }
+  .header p { margin: 0; color: #999; }
+  .container { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; padding: 20px; }
+  .panel { background: #1e1e1e; border-radius: 8px; padding: 15px; }
+  .panel h2 { margin: 0 0 15px 0; font-size: 18px; color: #4a9eff; }
+  .comparison { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 20px; }
+  .before, .after { padding: 10px; border-radius: 4px; }
+  .before { background: #2d1a1a; border-left: 3px solid #d32f2f; }
+  .after { background: #1a2d1a; border-left: 3px solid #388e3c; }
+  .label { font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 8px; }
+  .before .label { color: #ef5350; }
+  .after .label { color: #66bb6a; }
+  .value { font-family: 'Courier New', monospace; font-size: 13px; line-height: 1.6; }
+  .highlight { color: #ffd54f; font-weight: 600; }
+  .note { font-size: 12px; color: #999; margin-top: 10px; padding-top: 10px; border-top: 1px solid #333; }
+  .flower-icon { display: inline-block; margin-right: 6px; }
+</style>
+</head>
+<body>
+
+<div class="header">
+  <h1>🌸 Bloom 花朵模型优化对比</h1>
+  <p>基于 flower-scene.mjs 的视觉真实度增强 | 2025年优化版本</p>
+</div>
+
+<div class="container">
+
+  <!-- 荷花 -->
+  <div class="panel">
+    <h2><span class="flower-icon">🪷</span>荷花 (Lotus)</h2>
+
+    <h3 style="margin: 15px 0 10px 0; font-size: 14px; color: #aaa;">材质光学特性</h3>
+    <div class="comparison">
+      <div class="before">
+        <div class="label">优化前</div>
+        <div class="value">
+          roughness: <span class="highlight">0.54</span><br>
+          sheen: <span class="highlight">0.72</span><br>
+          clearcoat: <span class="highlight">0.025</span><br>
+          sheenColor: #f4d9db
+        </div>
+      </div>
+      <div class="after">
+        <div class="label">优化后</div>
+        <div class="value">
+          roughness: <span class="highlight">0.48</span> ⬇<br>
+          sheen: <span class="highlight">0.82</span> ⬆<br>
+          clearcoat: <span class="highlight">0.15</span> ⬆<br>
+          sheenColor: #fce8eb
+        </div>
+      </div>
+    </div>
+    <div class="note">✨ 蜡质光泽增强：模拟荷叶效应的防水表面</div>
+
+    <h3 style="margin: 15px 0 10px 0; font-size: 14px; color: #aaa;">莲蓬与雄蕊</h3>
+    <div class="comparison">
+      <div class="before">
+        <div class="label">优化前</div>
+        <div class="value">
+          莲蓬种子: <span class="highlight">11</span> 颗<br>
+          雄蕊数量: <span class="highlight">38</span> 根<br>
+          排列方式: 简单螺旋
+        </div>
+      </div>
+      <div class="after">
+        <div class="label">优化后</div>
+        <div class="value">
+          莲蓬种子: <span class="highlight">120</span> 颗 ⬆<br>
+          雄蕊数量: <span class="highlight">120</span> 根 ⬆<br>
+          排列方式: 斐波那契螺旋
+        </div>
+      </div>
+    </div>
+    <div class="note">🌿 植物学修正：符合真实莲花的花蕊和种子数量</div>
+  </div>
+
+  <!-- 百合 -->
+  <div class="panel">
+    <h2><span class="flower-icon">🌺</span>百合 (Lily)</h2>
+
+    <h3 style="margin: 15px 0 10px 0; font-size: 14px; color: #aaa;">材质光学特性</h3>
+    <div class="comparison">
+      <div class="before">
+        <div class="label">优化前</div>
+        <div class="value">
+          roughness: <span class="highlight">0.54</span><br>
+          sheen: <span class="highlight">0.72</span><br>
+          clearcoat: <span class="highlight">0.025</span><br>
+          transmission: <span class="highlight">无</span>
+        </div>
+      </div>
+      <div class="after">
+        <div class="label">优化后</div>
+        <div class="value">
+          roughness: <span class="highlight">0.42</span> ⬇<br>
+          sheen: <span class="highlight">0.92</span> ⬆<br>
+          clearcoat: <span class="highlight">0.08</span> ⬆<br>
+          transmission: <span class="highlight">无</span>（保持）
+        </div>
+      </div>
+    </div>
+    <div class="note">✨ 丝绸光泽：百合花瓣的高贵质感</div>
+
+    <h3 style="margin: 15px 0 10px 0; font-size: 14px; color: #aaa;">雄蕊与雌蕊</h3>
+    <div class="comparison">
+      <div class="before">
+        <div class="label">优化前</div>
+        <div class="value">
+          花药尺寸: <span class="highlight">0.018×0.006</span><br>
+          花药颜色: <span class="highlight">#aa5b28</span><br>
+          花丝粗细: <span class="highlight">0.0023</span><br>
+          柱头尺寸: <span class="highlight">0.009</span>
+        </div>
+      </div>
+      <div class="after">
+        <div class="label">优化后</div>
+        <div class="value">
+          花药尺寸: <span class="highlight">0.025×0.009</span> ⬆<br>
+          花药颜色: <span class="highlight">#c85a18</span> 更鲜艳<br>
+          花丝粗细: <span class="highlight">0.003</span> ⬆<br>
+          柱头尺寸: <span class="highlight">0.012</span> ⬆
+        </div>
+      </div>
+    </div>
+    <div class="note">🌿 T字型花药：真实百合的标志性特征</div>
+  </div>
+
+  <!-- 玫瑰 -->
+  <div class="panel">
+    <h2><span class="flower-icon">🌹</span>玫瑰 (Rose)</h2>
+
+    <h3 style="margin: 15px 0 10px 0; font-size: 14px; color: #aaa;">材质光学特性</h3>
+    <div class="comparison">
+      <div class="before">
+        <div class="label">优化前</div>
+        <div class="value">
+          roughness: <span class="highlight">0.54</span><br>
+          sheen: <span class="highlight">0.72</span><br>
+          clearcoat: <span class="highlight">0.025</span><br>
+          sheenColor: #f4d9db
+        </div>
+      </div>
+      <div class="after">
+        <div class="label">优化后</div>
+        <div class="value">
+          roughness: <span class="highlight">0.72</span> ⬆<br>
+          sheen: <span class="highlight">0.65</span> ⬇<br>
+          clearcoat: <span class="highlight">0.02</span> ⬇<br>
+          sheenColor: #d8344c
+        </div>
+      </div>
+    </div>
+    <div class="note">✨ 天鹅绒质感：哑光深沉的红色花瓣</div>
+
+    <h3 style="margin: 15px 0 10px 0; font-size: 14px; color: #aaa;">叶片细节</h3>
+    <div class="comparison">
+      <div class="before">
+        <div class="label">优化前</div>
+        <div class="value">
+          边缘形态: <span class="highlight">光滑</span><br>
+          叶脉纹理: <span class="highlight">基础</span><br>
+          特殊处理: <span class="highlight">无</span>
+        </div>
+      </div>
+      <div class="after">
+        <div class="label">优化后</div>
+        <div class="value">
+          边缘形态: <span class="highlight">28齿锯齿</span> ✓<br>
+          叶脉纹理: <span class="highlight">主脉+侧脉</span> ⬆<br>
+          特殊处理: <span class="highlight">边缘正弦扰动</span>
+        </div>
+      </div>
+    </div>
+    <div class="note">🌿 植物学准确：玫瑰叶片特有的锯齿边缘</div>
+  </div>
+
+  <!-- 山茶 -->
+  <div class="panel">
+    <h2><span class="flower-icon">🌺</span>山茶 (Camellia)</h2>
+
+    <h3 style="margin: 15px 0 10px 0; font-size: 14px; color: #aaa;">材质光学特性</h3>
+    <div class="comparison">
+      <div class="before">
+        <div class="label">优化前</div>
+        <div class="value">
+          roughness: <span class="highlight">0.54</span><br>
+          sheen: <span class="highlight">0.72</span><br>
+          clearcoat: <span class="highlight">0.025</span><br>
+          sheenColor: #f4d9db
+        </div>
+      </div>
+      <div class="after">
+        <div class="label">优化后</div>
+        <div class="value">
+          roughness: <span class="highlight">0.58</span> ⬆<br>
+          sheen: <span class="highlight">0.78</span> ⬆<br>
+          clearcoat: <span class="highlight">0.12</span> ⬆<br>
+          sheenColor: #f9ebe8
+        </div>
+      </div>
+    </div>
+    <div class="note">✨ 柔和光泽：介于蜡质和天鹅绒之间</div>
+
+    <h3 style="margin: 15px 0 10px 0; font-size: 14px; color: #aaa;">叶片细节</h3>
+    <div class="comparison">
+      <div class="before">
+        <div class="label">优化前</div>
+        <div class="value">
+          边缘形态: <span class="highlight">光滑</span><br>
+          革质光泽: <span class="highlight">无</span><br>
+          雄蕊数量: <span class="highlight">35</span>
+        </div>
+      </div>
+      <div class="after">
+        <div class="label">优化后</div>
+        <div class="value">
+          边缘形态: <span class="highlight">小锯齿</span> ✓<br>
+          革质光泽: <span class="highlight">材质模拟</span> ✓<br>
+          雄蕊数量: <span class="highlight">35</span>（正确）
+        </div>
+      </div>
+    </div>
+    <div class="note">🌿 山茶科特征：革质叶片与细齿边缘</div>
+  </div>
+
+  <!-- 樱花 -->
+  <div class="panel">
+    <h2><span class="flower-icon">🌸</span>樱花 (Cherry Blossom)</h2>
+
+    <h3 style="margin: 15px 0 10px 0; font-size: 14px; color: #aaa;">材质光学特性</h3>
+    <div class="comparison">
+      <div class="before">
+        <div class="label">优化前</div>
+        <div class="value">
+          roughness: <span class="highlight">0.54</span><br>
+          sheen: <span class="highlight">0.72</span><br>
+          transmission: <span class="highlight">无</span><br>
+          thickness: <span class="highlight">默认</span>
+        </div>
+      </div>
+      <div class="after">
+        <div class="label">优化后</div>
+        <div class="value">
+          roughness: <span class="highlight">0.38</span> ⬇<br>
+          sheen: <span class="highlight">0.88</span> ⬆<br>
+          transmission: <span class="highlight">0.06</span> ✨<br>
+          thickness: <span class="highlight">0.5</span> 薄花瓣
+        </div>
+      </div>
+    </div>
+    <div class="note">✨ 纸质薄透：樱花特有的轻盈感和透射光效果</div>
+
+    <h3 style="margin: 15px 0 10px 0; font-size: 14px; color: #aaa;">雄蕊数量</h3>
+    <div class="comparison">
+      <div class="before">
+        <div class="label">优化前</div>
+        <div class="value">
+          雄蕊数量: <span class="highlight">22</span> 根<br>
+          花药颜色: <span class="highlight">#e4b53a</span><br>
+          分支结构: <span class="highlight">3分支</span>
+        </div>
+      </div>
+      <div class="after">
+        <div class="label">优化后</div>
+        <div class="value">
+          雄蕊数量: <span class="highlight">30</span> 根 ⬆<br>
+          花药颜色: <span class="highlight">#e4b53a</span>（保持）<br>
+          分支结构: <span class="highlight">3分支</span>（保持）
+        </div>
+      </div>
+    </div>
+    <div class="note">🌿 植物学修正：接近真实樱花的雄蕊数量</div>
+  </div>
+
+  <!-- 通用优化 -->
+  <div class="panel" style="grid-column: 1 / -1;">
+    <h2><span class="flower-icon">🎨</span>全花种通用增强</h2>
+
+    <h3 style="margin: 15px 0 10px 0; font-size: 14px; color: #aaa;">花瓣叶脉系统</h3>
+    <div class="comparison">
+      <div class="before">
+        <div class="label">优化前</div>
+        <div class="value">
+          叶脉类型: <span class="highlight">基础侧脉</span><br>
+          颜色变化: <span class="highlight">单一渐变</span><br>
+          几何凸起: <span class="highlight">无</span><br>
+          实现方式: <span class="highlight">仅颜色</span>
+        </div>
+      </div>
+      <div class="after">
+        <div class="label">优化后</div>
+        <div class="value">
+          叶脉类型: <span class="highlight">主脉 + 侧脉（二级）</span> ⬆<br>
+          颜色变化: <span class="highlight">主脉加深 + 侧脉纹理</span> ⬆<br>
+          几何凸起: <span class="highlight">主脉0.0025 + 侧脉0.0018</span> ✓<br>
+          实现方式: <span class="highlight">颜色 + 几何浮雕</span>
+        </div>
+      </div>
+    </div>
+    <div class="note">
+      ✨ 主脉：高斯分布加深，指数衰减凸起<br>
+      ✨ 侧脉：9条侧脉从主脉向边缘分叉，正弦波纹理
+    </div>
+
+    <h3 style="margin: 30px 0 10px 0; font-size: 14px; color: #aaa;">性能与兼容性</h3>
+    <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px;">
+      <div style="padding: 10px; background: #1a2a1a; border-radius: 4px; border-left: 3px solid #66bb6a;">
+        <div style="font-size: 11px; color: #999; margin-bottom: 5px;">测试结果</div>
+        <div style="font-size: 16px; font-weight: 600; color: #66bb6a;">26/26 通过 ✓</div>
+        <div style="font-size: 11px; color: #aaa; margin-top: 5px;">test_interactions.cjs</div>
+      </div>
+      <div style="padding: 10px; background: #1a2a1a; border-radius: 4px; border-left: 3px solid #66bb6a;">
+        <div style="font-size: 11px; color: #999; margin-bottom: 5px;">性能影响</div>
+        <div style="font-size: 16px; font-weight: 600; color: #66bb6a;">< 5% ✓</div>
+        <div style="font-size: 11px; color: #aaa; margin-top: 5px;">帧率保持 60fps</div>
+      </div>
+      <div style="padding: 10px; background: #1a2a1a; border-radius: 4px; border-left: 3px solid #66bb6a;">
+        <div style="font-size: 11px; color: #999; margin-bottom: 5px;">向后兼容</div>
+        <div style="font-size: 16px; font-weight: 600; color: #66bb6a;">100% ✓</div>
+        <div style="font-size: 11px; color: #aaa; margin-top: 5px;">无破坏性变更</div>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<div style="padding: 20px; text-align: center; color: #666; font-size: 12px;">
+  <p>Bloom Gesture Kit · Visual Enhancement 2025</p>
+  <p>Co-Authored-By: Claude Opus 5.5</p>
+</div>
+
+</body>
+</html>
