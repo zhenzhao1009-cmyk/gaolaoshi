@@ -48,6 +48,7 @@ await check('Invalid URL input cannot poison bloom state with NaN',async()=>{con
 await check('All literal element references exist and IDs are unique',async()=>{const ids=[...html.matchAll(/\bid="([^"]+)"/g)].map(x=>x[1]);assert.equal(ids.length,new Set(ids).size);for(const m of sourceText.matchAll(/\$\("([^"]+)"\)/g))assert.ok(ids.includes(m[1]),m[1]);assert.ok(fs.existsSync(path.resolve(__dirname,'../lib/experience.css')))});
 await check('Petal profiles, translucency and vein details render for every flower',async()=>{const h=makeHarness();await settle();const profile=h.eval('PETAL_PROFILES');assert.equal(Object.keys(profile).length,5);for(const name of ['Lotus','Lily','Rose','Camellia','Cherry Blossom'])assert.ok(profile[name]&&profile[name].rim>0);for(let type=0;type<5;type++){const pt=h.eval('(()=>{const C=camera(500,300,260,.4,24);const p=PETAL_PROFILES[FLOWERS['+type+'].name];return petal(C,{bx:0,by:0,bz:0,phi:.7,theta:.8,curl:.2,L:.5,W:.2,p:.7,q:.8,notch:0,cup:.4,ruffle:0,seed:'+type+',shape:p.shape,skew:p.skew,tip:p.tip,rim:p.rim})})()');assert.ok(pt.left.length===17&&pt.right.length===17&&pt.spine.length===17);assert.ok(pt.left.every(x=>x.slice(0,3).every(Number.isFinite)));assert.equal(pt.rim,profile[h.eval('FLOWERS['+type+'].name')].rim)}assert.ok(sourceText.includes('尖端透光'));assert.ok(sourceText.includes('一侧副脉'))});
 await check('Lily leaves are broad, folded and anatomically detailed',async()=>{const h=makeHarness();await settle();const leafDefs=h.eval('FLOWERS.find(f=>f.name==="Lily").stem.leaves');assert.ok(leafDefs.length>=6);assert.ok(leafDefs.every(l=>l.wid>=0.09));const pt=h.eval('(()=>{const C=camera(500,300,260,.4,24);return leaf(C,{bx:0,by:0,bz:0,phi:.7,theta:.9,curl:.3,L:.5,W:.11,seed:1,fold:.48})})()');assert.equal(pt.left.length,17);assert.ok(pt.left.every(x=>x.slice(0,3).every(Number.isFinite)));assert.ok(sourceText.includes('function leaf(C, o)'));assert.ok(sourceText.includes('function drawLeaf'));assert.ok(sourceText.includes('主叶脉'))});
+await check('Flowers and foliage keep the fuller visual treatment',async()=>{const h=makeHarness();await settle();assert.ok(h.eval('PETAL_FULLNESS>=1.2'));assert.ok(h.eval('LEAF_FULLNESS>=1.25'));assert.ok(h.eval('FLOWERS.find(f=>f.name==="Lotus").layers.reduce((n,x)=>n+x.n,0)>=28'));assert.ok(h.eval('FLOWERS.find(f=>f.name==="Rose").stem.leaves.length>=4'));assert.ok(h.eval('FLOWERS.filter(f=>f.foliage?.length).length>=3'));assert.ok(sourceText.includes('中段柔光让花瓣鼓起来'))});
 await check('Finger counting is precise and tolerates detection flickers',async()=>{const h=makeHarness();await settle();const out=h.eval(`(()=>{
   const mk=(ext)=>{const p=[];for(let i=0;i<21;i++)p.push({x:.5,y:.6});
     p[0]={x:.5,y:.85};p[2]={x:.42,y:.62};p[5]={x:.44,y:.5};p[9]={x:.5,y:.48};p[13]={x:.56,y:.5};p[17]={x:.62,y:.54};
@@ -91,6 +92,22 @@ await check('Every flower supports both finger-count and pinch gestures',async()
   if(slots[0].mode!=='pinch')return 'sakura pinch not recognized';
   return 'ok'})()`);
 assert.equal(out,'ok',out)});
+await check('Duo flowers require two hands unless manually forced',async()=>{const h=makeHarness();await settle();
+// 只有一只手（slot 1 从未被识别）：即便 loop 跑多个周期，duo 必须保持 0
+h.eval('slots[0].seen=9000;slots[1].seen=-1e9');
+for(let k=1;k<=4;k++)h.eval('loop('+(9000+k*100)+');slots[0].seen='+(9000+k*100));
+assert.ok(h.eval('duo')<0.01,'duo must stay 0 with one hand');
+// 两只手都识别到：duo 升起来
+for(let k=0;k<=10;k++){const t=10000+k*100;h.eval('slots[0].seen='+t+';slots[1].seen='+t+';loop('+t+')')}
+assert.ok(h.eval('duo')>0.5,'duo must rise with two hands');
+// 一只手又消失了：duo 回落（另一只手仍活跃）
+for(let k=0;k<=20;k++){const t=11200+k*100;h.eval('slots[0].seen='+t+';loop('+t+')')}
+assert.ok(h.eval('duo')<0.01,'duo must fall back with one hand');
+// 手动开双花不受影响
+h.eval('toggleDuo()');
+assert.equal(h.eval('forceDuo'),true);
+for(let k=0;k<=10;k++)h.eval('loop('+(13400+k*100)+')');
+assert.ok(h.eval('duo')>0.9,'forced duo must stay on')});
 
 console.log('\n'+passed+' checks passed. Mocked logic only; live camera and browser layout require manual QA.');
 })().catch(e=>{console.error(e);process.exitCode=1});

@@ -431,10 +431,14 @@ const FLOWERS = [
     frames: { dir: "frames/lotus", count: 120 },
     view: 24, lift: 0.1, stages: [0, 0.3, 0.5, 0.7, 0.85, 1],
     stem: { len: 1.25, bend: 0.12, w: 0.028, c: "#55703a" },
+    foliage: [
+      { phi: 210, len: 0.56, wid: 0.25, tilt: 82, curl: -8, fold: 0.22 },
+      { phi: 25, len: 0.5, wid: 0.23, tilt: 80, curl: -6, fold: 0.24 },
+    ],
     layers: [
-      P({ n: 8, len: 0.5, wid: 0.19, p: 0.68, q: 0.9, t0: 9, t1: 80, curl: 12, cup: 0.5, c0: "#e27d98", c1: "#fdf1f3" }),
-      P({ n: 8, len: 0.46, wid: 0.18, p: 0.68, q: 0.9, t0: 6, t1: 60, curl: 6, cup: 0.55, delay: 0.12, twist: 22.5, c0: "#e98aa3", c1: "#fff5f7" }),
-      P({ n: 6, len: 0.38, wid: 0.16, p: 0.66, q: 0.9, t0: 3, t1: 36, cup: 0.6, delay: 0.24, twist: 10, c0: "#f09db2", c1: "#fff8f9" }),
+      P({ n: 10, len: 0.5, wid: 0.19, p: 0.68, q: 0.9, t0: 9, t1: 80, curl: 12, cup: 0.5, c0: "#e27d98", c1: "#fdf1f3" }),
+      P({ n: 10, len: 0.46, wid: 0.18, p: 0.68, q: 0.9, t0: 6, t1: 60, curl: 6, cup: 0.55, delay: 0.12, twist: 18, c0: "#e98aa3", c1: "#fff5f7" }),
+      P({ n: 8, len: 0.38, wid: 0.16, p: 0.66, q: 0.9, t0: 3, t1: 36, cup: 0.6, delay: 0.24, twist: 9, c0: "#f09db2", c1: "#fff8f9" }),
     ],
     center: { type: "pod", r: 0.1, h: 0.1 },
   },
@@ -450,9 +454,11 @@ const FLOWERS = [
       leaves: [
         { at: 0.18, phi: 220, len: 0.42, wid: 0.095, tilt: 56, curl: 16, fold: 0.5 },
         { at: 0.3, phi: 40, len: 0.48, wid: 0.105, tilt: 54, curl: 18, fold: 0.48 },
+        { at: 0.39, phi: 258, len: 0.46, wid: 0.105, tilt: 55, curl: 17, fold: 0.5 },
         { at: 0.48, phi: 170, len: 0.5, wid: 0.11, tilt: 52, curl: 18, fold: 0.48 },
         { at: 0.58, phi: 120, len: 0.52, wid: 0.11, tilt: 51, curl: 19, fold: 0.47 },
         { at: 0.66, phi: 300, len: 0.54, wid: 0.115, tilt: 50, curl: 20, fold: 0.46 },
+        { at: 0.75, phi: 205, len: 0.5, wid: 0.11, tilt: 50, curl: 19, fold: 0.48 },
         { at: 0.84, phi: 90, len: 0.56, wid: 0.12, tilt: 48, curl: 20, fold: 0.46 },
       ],
     },
@@ -466,14 +472,22 @@ const FLOWERS = [
     name: "Rose", chinese: "玫瑰", line: "层层花瓣，藏着未说完的心意。", latin: "Rosa rugosa", verse: "Each layer, a held breath.",
     frames: { dir: "frames/rose", count: 150, petals: ["#b3122c", "#d42a45", "#8e1328"] },
     view: 34, lift: 0.08, stages: [0, 0.3, 0.55, 0.78, 0.9, 1],
-    stem: { len: 1.15, bend: 0.08, w: 0.024, c: "#4d6b33" },
+    stem: {
+      len: 1.15, bend: 0.08, w: 0.024, c: "#4d6b33",
+      leaves: [
+        { at: 0.28, phi: 215, len: 0.34, wid: 0.12, tilt: 58, curl: 13, fold: 0.5 },
+        { at: 0.4, phi: 35, len: 0.32, wid: 0.115, tilt: 56, curl: 14, fold: 0.48 },
+        { at: 0.58, phi: 165, len: 0.3, wid: 0.11, tilt: 54, curl: 15, fold: 0.47 },
+        { at: 0.72, phi: 325, len: 0.28, wid: 0.105, tilt: 52, curl: 15, fold: 0.46 },
+      ],
+    },
     layers: [
       P({ n: 5, len: 0.3, wid: 0.07, p: 0.5, q: 1, t0: 18, t1: 118, curl: 20, cup: 0.1, c0: "#5f7d38", c1: "#3f5826" }), // 萼片
-      P({ n: 5, len: 0.42, wid: 0.25, p: 0.5, q: 0.45, t0: 10, t1: 88, curl: 30, cup: 0.55, base: 0.03, twist: 36, c0: "#d42a45", c1: "#8e1328" }),
-      P({ n: 5, len: 0.38, wid: 0.24, p: 0.5, q: 0.45, t0: 7, t1: 66, curl: 18, cup: 0.65, delay: 0.1, twist: 0, c0: "#cf2440", c1: "#870f24" }),
-      P({ n: 5, len: 0.33, wid: 0.22, p: 0.5, q: 0.45, t0: 5, t1: 46, curl: 8, cup: 0.75, delay: 0.2, twist: 36, c0: "#c81f3b", c1: "#7d0d20" }),
-      P({ n: 4, len: 0.27, wid: 0.2, p: 0.5, q: 0.45, t0: 3, t1: 26, cup: 0.85, delay: 0.32, twist: 15, c0: "#bd1a35", c1: "#700b1c" }),
-      P({ n: 3, len: 0.2, wid: 0.18, p: 0.5, q: 0.45, t0: 2, t1: 10, cup: 0.9, delay: 0.44, twist: 70, c0: "#b01530", c1: "#640a19" }),
+      P({ n: 7, len: 0.42, wid: 0.25, p: 0.5, q: 0.45, t0: 10, t1: 88, curl: 30, cup: 0.55, base: 0.03, twist: 25, c0: "#d42a45", c1: "#8e1328" }),
+      P({ n: 7, len: 0.38, wid: 0.24, p: 0.5, q: 0.45, t0: 7, t1: 66, curl: 18, cup: 0.65, delay: 0.1, twist: 0, c0: "#cf2440", c1: "#870f24" }),
+      P({ n: 6, len: 0.33, wid: 0.22, p: 0.5, q: 0.45, t0: 5, t1: 46, curl: 8, cup: 0.75, delay: 0.2, twist: 30, c0: "#c81f3b", c1: "#7d0d20" }),
+      P({ n: 5, len: 0.27, wid: 0.2, p: 0.5, q: 0.45, t0: 3, t1: 26, cup: 0.85, delay: 0.32, twist: 14, c0: "#bd1a35", c1: "#700b1c" }),
+      P({ n: 4, len: 0.2, wid: 0.18, p: 0.5, q: 0.45, t0: 2, t1: 10, cup: 0.9, delay: 0.44, twist: 45, c0: "#b01530", c1: "#640a19" }),
     ],
     center: null,
   },
@@ -485,10 +499,17 @@ const FLOWERS = [
     stages: [0, 0.26, 0.4, 0.53, 0.7, 1],
     view: 60, lift: 0,
     stem: null,
+    foliage: [
+      { phi: 15, len: 0.43, wid: 0.16, tilt: 84, curl: -5, fold: 0.34 },
+      { phi: 92, len: 0.4, wid: 0.15, tilt: 82, curl: -4, fold: 0.36 },
+      { phi: 170, len: 0.44, wid: 0.17, tilt: 85, curl: -6, fold: 0.33 },
+      { phi: 245, len: 0.39, wid: 0.15, tilt: 82, curl: -4, fold: 0.36 },
+      { phi: 315, len: 0.42, wid: 0.16, tilt: 84, curl: -5, fold: 0.34 },
+    ],
     layers: [
-      P({ n: 6, len: 0.44, wid: 0.27, p: 0.5, q: 0.4, t0: 8, t1: 86, cup: 0.35, c0: "#d93a46", c1: "#8a1626" }),
-      P({ n: 6, len: 0.37, wid: 0.25, p: 0.5, q: 0.4, t0: 5, t1: 66, cup: 0.45, delay: 0.14, twist: 30, c0: "#e04a55", c1: "#951a2a" }),
-      P({ n: 5, len: 0.28, wid: 0.2, p: 0.5, q: 0.4, t0: 3, t1: 44, cup: 0.55, delay: 0.28, twist: 12, c0: "#e65a63", c1: "#9e1f2e" }),
+      P({ n: 8, len: 0.44, wid: 0.27, p: 0.5, q: 0.4, t0: 8, t1: 86, cup: 0.35, c0: "#d93a46", c1: "#8a1626" }),
+      P({ n: 8, len: 0.37, wid: 0.25, p: 0.5, q: 0.4, t0: 5, t1: 66, cup: 0.45, delay: 0.14, twist: 22.5, c0: "#e04a55", c1: "#951a2a" }),
+      P({ n: 7, len: 0.28, wid: 0.2, p: 0.5, q: 0.4, t0: 3, t1: 44, cup: 0.55, delay: 0.28, twist: 12, c0: "#e65a63", c1: "#9e1f2e" }),
     ],
     center: { type: "stamens", n: 34, len: 0.13, spread: 32, fil: "#f6e3a4", anther: "#f2c437" },
   },
@@ -499,6 +520,11 @@ const FLOWERS = [
     stages: [0, 0.48, 0.64, 0.76, 0.85, 1],
     view: 72, lift: 0,
     stem: null,
+    foliage: [
+      { phi: 40, len: 0.34, wid: 0.12, tilt: 85, curl: -4, fold: 0.32 },
+      { phi: 155, len: 0.32, wid: 0.115, tilt: 83, curl: -3, fold: 0.34 },
+      { phi: 275, len: 0.33, wid: 0.12, tilt: 84, curl: -4, fold: 0.33 },
+    ],
     layers: [
       P({ n: 5, len: 0.42, wid: 0.27, p: 0.55, q: 0.55, notch: 0.12, t0: 10, t1: 84, cup: 0.22, c0: "#fde8ee", c1: "#f2a3ba" }),
     ],
@@ -931,6 +957,8 @@ const PETAL_PROFILES = {
   Camellia: { shape: 0.20, skew: -0.05, tip: 0.10, rim: 0.16, vein: 0.06 },
   "Cherry Blossom": { shape: 0.10, skew: 0.07, tip: 0.18, rim: 0.22, vein: 0.05 },
 };
+const PETAL_FULLNESS = 1.26;
+const LEAF_FULLNESS = 1.3;
 
 /* 生成一片花瓣（或叶子）的屏幕轮廓 */
 function petal(C, o) {
@@ -951,8 +979,9 @@ function petal(C, o) {
     if (k === Math.round(SEG * 0.5)) nMid = [nx, ny, nz];
     const taper = Math.pow(Math.max(0, Math.sin(Math.PI * Math.pow(u, p))), q);
     const profile = 1 + shape * 0.16 * Math.sin(u * Math.PI * 2) + skew * (u - 0.5) * 0.22;
-    const w = taper * W * Math.max(0.55, profile) * (1 - tip * Math.pow(u, 5));
-    const c = cup * w;
+    const fullness = lerp(1, PETAL_FULLNESS, Math.pow(Math.sin(Math.PI * u), 0.72));
+    const w = taper * W * Math.max(0.55, profile) * (1 - tip * Math.pow(u, 5)) * fullness;
+    const c = cup * w + (PETAL_FULLNESS - 1) * W * 0.42 * Math.sin(Math.PI * u);
     const rf = ruffle ? Math.sin(u * 11 + seed * 6) * ruffle * W : 0;
     left.push(proj(C, px - tx * w + nx * (c + rf), py + ny * (c + rf), pz - tz * w + nz * (c + rf)));
     right.push(proj(C, px + tx * w + nx * (c - rf), py + ny * (c - rf), pz + tz * w + nz * (c - rf)));
@@ -990,6 +1019,14 @@ function drawPetal(g, pt, c0, c1, scale, vein = 0.07) {
   // 明暗：背面和背光处压暗，内侧保留更多层次
   const dark = (pt.inner ? 0 : 0.12) + (1 - pt.lit) * 0.34;
   if (dark > 0.01) { g.fillStyle = `rgba(10,14,12,${dark})`; g.fill(); }
+  // 中段柔光让花瓣鼓起来，保持边缘清晰但不显得像一张薄纸。
+  const belly = pt.spine[Math.round(pt.spine.length * 0.48)];
+  const volume = g.createRadialGradient(belly[0], belly[1], 0, belly[0], belly[1], scale * 0.28);
+  volume.addColorStop(0, `rgba(255,255,250,${pt.inner ? 0.13 : 0.08})`);
+  volume.addColorStop(0.58, "rgba(255,250,242,0.035)");
+  volume.addColorStop(1, "rgba(80,35,25,0)");
+  g.fillStyle = volume;
+  g.fill();
   // 尖端透光，避免整片花瓣像一块纯色渐变
   const glow = g.createRadialGradient(pt.tip[0], pt.tip[1], 0, pt.tip[0], pt.tip[1], scale * 0.2);
   glow.addColorStop(0, `rgba(255,252,244,${pt.rim})`);
@@ -1031,9 +1068,10 @@ function leaf(C, o) {
     // 叶形：基部收窄，中段饱满，叶尖渐收；比花瓣更宽、更厚。
     const width = Math.pow(Math.sin(Math.PI * Math.pow(u, 0.72)), 0.58) * W;
     const tip = 1 - 0.92 * Math.pow(u, 4);
-    const rib = fold * width * (0.22 + 0.78 * Math.sin(u * Math.PI));
+    const fullness = lerp(1, LEAF_FULLNESS, Math.pow(Math.sin(Math.PI * u), 0.68));
+    const rib = fold * width * fullness * (0.28 + 0.86 * Math.sin(u * Math.PI));
     const wrinkle = Math.sin(u * 18 + seed * 4) * 0.025 * width;
-    const w = width * tip;
+    const w = width * tip * fullness;
     left.push(proj(C, px - tx * w + nx * (rib + wrinkle), py + ny * (rib + wrinkle), pz - tz * w + nz * (rib + wrinkle)));
     right.push(proj(C, px + tx * w + nx * (rib - wrinkle), py + ny * (rib - wrinkle), pz + tz * w + nz * (rib - wrinkle)));
     spine.push(proj(C, px, py, pz));
@@ -1052,10 +1090,19 @@ function drawLeaf(g, pt, R) {
   g.closePath();
   const a = pt.spine[0], b = pt.tip;
   const grad = g.createLinearGradient(a[0], a[1], b[0], b[1]);
-  grad.addColorStop(0, "#2e4a22");
-  grad.addColorStop(0.38, "#567a37");
-  grad.addColorStop(1, "#8cae5a");
+  grad.addColorStop(0, "#29451f");
+  grad.addColorStop(0.32, "#557d35");
+  grad.addColorStop(0.68, "#719b48");
+  grad.addColorStop(1, "#a2c26a");
   g.fillStyle = grad;
+  g.fill();
+  const midIndex = Math.round(pt.spine.length * 0.48);
+  const belly = pt.spine[midIndex];
+  const sheen = g.createRadialGradient(belly[0], belly[1], 0, belly[0], belly[1], R * 0.2);
+  sheen.addColorStop(0, "rgba(226,245,176,0.18)");
+  sheen.addColorStop(0.6, "rgba(172,211,112,0.05)");
+  sheen.addColorStop(1, "rgba(35,68,25,0)");
+  g.fillStyle = sheen;
   g.fill();
   // 叶片厚度与叶背阴影
   g.strokeStyle = "rgba(22,38,16,0.28)";
@@ -1093,6 +1140,16 @@ function drawFlower3D(g, slot, cx, cy, R, alpha, now) {
   const C = camera(cx, cy, R, slot.yaw, f.view);
   const items = [];
   const tips = [];
+
+  // 花头后方的叶片先入队，作为一圈深浅错落的绿色衬底。
+  (f.foliage || []).forEach((lf, li) => {
+    const pt = leaf(C, {
+      bx: 0, by: -0.025, bz: 0,
+      phi: lf.phi * DEG, theta: lf.tilt * DEG, curl: lf.curl * DEG,
+      L: lf.len, W: lf.wid, seed: 40 + li, fold: lf.fold || 0.34,
+    });
+    items.push({ z: pt.z, zBias: -20, draw: () => drawLeaf(g, pt, R) });
+  });
 
   // 花茎
   if (f.stem) {
@@ -1819,7 +1876,10 @@ function loop(now) {
     }
   }
   if (demoMode) updateDemo(now);
-  const wantDuo = forceDuo || now - slots[1].seen < 700;
+  // 双花只在真实识别到两只手时进入/维持；手动开的双花 (forceDuo) 例外。
+  // 两只手各自在约 400ms 内都被识别到才进入；识别偶尔卡顿几帧不会抖。
+  const twoHands = Math.max(now - slots[0].seen, now - slots[1].seen) < 400;
+  const wantDuo = forceDuo || twoHands;
   duo += ((wantDuo ? 1 : 0) - duo) * follow(dt, 200);
   slots.forEach((s, i) => {
     s.bloom += (s.target - s.bloom) * follow(dt, s.tau);
