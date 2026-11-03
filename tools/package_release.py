@@ -33,11 +33,16 @@ required = root_files | {"lib/vision_bundle.mjs", "lib/wasm/vision_wasm_internal
 assert required.issubset(paths), f"Missing release files: {required - set(paths)}"
 manifest = {"version": VERSION["version"], "tag": VERSION["tag"],
             "sourceCommit": git("rev-parse", "HEAD").decode().strip(), "files": []}
+subprocess.run(["git", "diff", "HEAD", "--quiet"], cwd=ROOT, check=True)
 with zipfile.ZipFile(ARCHIVE, "w", zipfile.ZIP_DEFLATED, compresslevel=6) as package:
     for name in sorted(paths):
         data = (ROOT / name).read_bytes()
         manifest["files"].append({"path": name, "bytes": len(data), "sha256": hashlib.sha256(data).hexdigest()})
-        package.writestr(PREFIX + name, data)
+        info = zipfile.ZipInfo.from_file(ROOT / name, PREFIX + name)
+        info.create_system = 3
+        info.external_attr = (0o100755 if name.endswith((".command", ".sh")) else 0o100644) << 16
+        info.compress_type = zipfile.ZIP_DEFLATED
+        package.writestr(info, data)
     package.writestr(PREFIX + "release-manifest.json", json.dumps(manifest, ensure_ascii=False, indent=2))
 with zipfile.ZipFile(ARCHIVE) as package:
     assert package.testzip() is None, "ZIP integrity check failed"
