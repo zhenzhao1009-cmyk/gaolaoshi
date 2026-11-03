@@ -16,3 +16,6 @@ desktop.ini
 *.log
 *.tmp
 node_modules/
+
+# 本地发布产物
+/releases/

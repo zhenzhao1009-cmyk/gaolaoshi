@@ -1,0 +1,201 @@
+<!doctype html>
+<html lang="zh-CN">
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="icon" href="data:,">
+<title>Bloom · WebGL 回归验证</title>
+<style>
+  body { margin: 24px; background: #ddc6a7; color: #382e28; font: 16px/1.6 system-ui, sans-serif; }
+  main { max-width: 1000px; margin: auto; }
+  button { padding: 8px 14px; margin-right: 8px; font: inherit; }
+  canvas { display: block; max-width: 100%; border: 1px solid #8a7058; margin-top: 16px; }
+  pre { white-space: pre-wrap; font-size: 13px; }
+</style>
+<main>
+  <h1>Bloom · WebGL 回归验证</h1>
+  <p>使用根目录 lib 模块和主页花种数据，实际创建 WebGL 场景。测试期间会临时修改并恢复本地效果设置。</p>
+  <button id="run" disabled>运行回归</button><button id="bloom" disabled>切换 Bloom</button><button id="environment" disabled>切换环境贴图</button>
+  <output id="summary" data-status="loading">正在载入模块</output>
+  <canvas id="preview"></canvas>
+  <pre id="results"></pre>
+</main>
+<script type="module">
+import * as THREE from '../lib/vendor/three/three.module.js';
+import { buildFlower, createFlowerScene } from '../lib/flower-scene.mjs';
+
+const canvas = document.getElementById('preview');
+const summary = document.getElementById('summary');
+const results = document.getElementById('results');
+const run = document.getElementById('run');
+const bloom = document.getElementById('bloom');
+const environment = document.getElementById('environment');
+const html = await (await fetch('../index.html')).text();
+const specs = new Function(html.slice(html.indexOf('const P ='), html.indexOf('/* ---------- One Euro')) + ';return FLOWERS;')();
+const slots = [{ type: 1, bloom: 0.7, yaw: 0, pitch: 0 }, { type: 0, bloom: 0.7, yaw: 0, pitch: 0 }];
+const state = { width: 960, height: 560, duo: 0, phone: false, frameMs: 16, wireframe: false };
+let scene = null;
+const assert = (condition, message) => { if (!condition) throw Error(message); };
+function render() { assert(scene.render(slots, state), '场景渲染失败'); }
+function pixels() {
+  const gl = canvas.getContext('webgl2');
+  const data = new Uint8Array(canvas.width * canvas.height * 4);
+  gl.readPixels(0, 0, canvas.width, canvas.height, gl.RGBA, gl.UNSIGNED_BYTE, data);
+  assert(gl.getError() === gl.NO_ERROR, 'WebGL 报错');
+  return data;
+}
+function differs(a, b) { return a.length !== b.length || a.some((v, i) => v !== b[i]); }
+function dispose() { scene?.dispose(); scene = null; }
+function preview() {
+  dispose();
+  slots[0].type = 1; state.duo = 0; state.width = 960; state.height = 560;
+  scene = createFlowerScene(canvas, specs);
+  render();
+}
+
+// 跟踪场景和 Three.js 自身的 WebGL 事件监听器，验证销毁后均被移除。
+const listeners = new Map();
+const add = canvas.addEventListener.bind(canvas), remove = canvas.removeEventListener.bind(canvas);
+canvas.addEventListener = (type, fn, options) => {
+  if (type.startsWith('webgl')) { if (!listeners.has(type)) listeners.set(type, new Set()); listeners.get(type).add(fn); }
+  add(type, fn, options);
+};
+canvas.removeEventListener = (type, fn, options) => { listeners.get(type)?.delete(fn); remove(type, fn, options); };
+
+run.addEventListener('click', async () => {
+  run.disabled = bloom.disabled = environment.disabled = true;
+  summary.dataset.status = 'running';
+  results.textContent = '';
+  let passed = 0, second = null, standalone = null;
+  const keys = ['bloom.postBloom', 'bloom.envMap', 'bloom.lod.override'];
+  const stored = keys.map(key => localStorage.getItem(key));
+  const check = (name, fn) => { fn(); passed++; results.textContent += 'PASS ' + name + '\n'; };
+  try {
+    dispose();
+    localStorage.setItem(keys[0], 'false'); localStorage.setItem(keys[1], 'true'); localStorage.removeItem(keys[2]);
+    scene = createFlowerScene(canvas, specs);
+    check('首次 resize 前开启 Bloom，百合可正常渲染', () => {
+      assert(!scene.stats().bloomEnabled, 'Bloom 默认应关闭');
+      assert(scene.toggleBloom() === true, '首次开关状态错误');
+      render();
+      assert(scene.stats().geometries > 0, '没有花朵几何体');
+      const data = pixels();
+      assert(data.some((v, i) => i % 4 === 3 && v > 0), '画布为空');
+    });
+    check('Bloom 连续开关与 stats 保持一致', () => {
+      for (let i = 0; i < 6; i++) { const enabled = scene.toggleBloom(); assert(scene.stats().bloomEnabled === enabled, '开关状态未更新'); render(); }
+      scene.toggleBloom(false); render();
+    });
+    check('Bloom 保留透明背景，开关确实改变可见像素', () => {
+      scene.toggleBloom(false); render(); const plain = pixels();
+      scene.toggleBloom(true); render(); const glowing = pixels();
+      assert(plain[3] === 0 && glowing[3] === 0, '画布空白处变成不透明背景');
+      assert(glowing.some((v, i) => i % 4 === 3 && v > 0), '花朵未绘制');
+      assert(differs(plain, glowing), 'Bloom 开关未改变画面');
+      scene.toggleBloom(false); render();
+    });
+    check('环境贴图即时影响活动模型和已缓存模型', () => {
+      scene.toggleEnvMap(true); render(); const enabled = pixels();
+      scene.toggleEnvMap(false); render(); const disabled = pixels();
+      assert(differs(enabled, disabled), '环境贴图开关没有影响画面');
+      slots[0].type = 2; render();
+      scene.toggleEnvMap(true);
+      slots[0].type = 1; render();
+      assert(!differs(enabled, pixels()), '缓存百合未恢复环境贴图');
+      assert(scene.stats().envMapEnabled, '环境贴图状态错误');
+    });
+    check('手动 LOD 重建与回收缓存，渲染三角形数随档位变化', () => {
+      // 先切换到另一档，清除前一项验证留下的非活动花种，再比较同一缓存规模。
+      scene.setLODOverride('low'); render();
+      scene.setLODOverride('high'); render(); const high = scene.stats();
+      scene.setLODOverride('low'); render(); const low = scene.stats();
+      assert(low.triangles < high.triangles, 'LOD 未改变网格密度');
+      assert(low.cachedModels === 1, '旧 LOD 缓存未清空');
+      for (let i = 0; i < 4; i++) {
+        scene.setLODOverride(i % 2 ? 'low' : 'high'); render();
+        assert(scene.stats().geometries === (i % 2 ? low : high).geometries, '重复切换后几何体计数增长');
+      }
+    });
+    check('自动双花 LOD 降档和恢复', () => {
+      scene.setLODOverride(null); state.duo = 1; render();
+      const detected = scene.stats().lodDetected;
+      assert(scene.stats().lod === (detected === 'high' ? 'medium' : detected), '双花自动档位错误');
+      state.duo = 0; render();
+      assert(scene.stats().lod === detected, '单花档位未恢复');
+      scene.setLODOverride('invalid');
+      assert(scene.stats().lodOverride === null && localStorage.getItem(keys[2]) === null, '无效档位未回退自动');
+    });
+    check('Bloom 开启后的 resize 与像素比变化', () => {
+      scene.toggleBloom(true);
+      for (const [width, height] of [[801, 501], [640, 480], [960, 560]]) {
+        Object.assign(state, { width, height }); render(); pixels();
+        assert(canvas.width === Math.floor(width * scene.stats().pixelRatio), '画布像素尺寸错误');
+      }
+      for (let i = 0; i < 46; i++) { state.frameMs = 30; render(); }
+      assert(scene.stats().pixelRatio <= 1, '慢帧未降低像素比');
+      scene.resetQuality(); state.frameMs = 16; render(); pixels();
+    });
+    check('localStorage 不可访问时仍可切换效果和 LOD', () => {
+      const descriptor = Object.getOwnPropertyDescriptor(window, 'localStorage');
+      Object.defineProperty(window, 'localStorage', { configurable: true, get() { throw Error('storage denied'); } });
+      try {
+        scene.toggleBloom(false); scene.toggleEnvMap(false); scene.setLODOverride('low'); render();
+        assert(!scene.stats().bloomEnabled && !scene.stats().envMapEnabled && scene.stats().lod === 'low', '内存状态失效');
+      } finally { Object.defineProperty(window, 'localStorage', descriptor); }
+    });
+    check('多场景独立释放环境贴图，共享法线直到最后一个使用者释放', () => {
+      scene.toggleEnvMap(true);
+      standalone = buildFlower(specs[1], 'low');
+      const normal = standalone.petals[0].mesh.material.normalMap;
+      let normalDisposals = 0, cubeDisposals = 0;
+      normal.addEventListener('dispose', () => normalDisposals++);
+      const otherCanvas = document.createElement('canvas');
+      second = createFlowerScene(otherCanvas, specs);
+      second.setLODOverride('low');
+      assert(second.render(slots, state), '第二个场景渲染失败');
+      const textureDispose = THREE.Texture.prototype.dispose;
+      THREE.Texture.prototype.dispose = function () { if (this.isCubeTexture) cubeDisposals++; return textureDispose.call(this); };
+      try {
+        dispose();
+        assert(cubeDisposals === 1 && normalDisposals === 0, '第一个场景释放了错误的贴图');
+        assert(second.render(slots, state), '另一个场景被销毁操作破坏');
+        second.dispose(); second.dispose(); second = null;
+        assert(cubeDisposals === 2 && normalDisposals === 0, '第二个场景资源归属错误');
+        standalone.dispose(); standalone.dispose(); standalone = null;
+        assert(normalDisposals === 1, '共享法线未释放或重复释放');
+      } finally { THREE.Texture.prototype.dispose = textureDispose; }
+    });
+    check('销毁后移除监听器，重复销毁安全，旧场景停止渲染', () => {
+      assert([...listeners.values()].every(set => set.size === 0), 'WebGL 监听器残留');
+      const gl = canvas.getContext('webgl2');
+      assert(!gl.getParameter(gl.UNPACK_FLIP_Y_WEBGL) && !gl.getParameter(gl.UNPACK_PREMULTIPLY_ALPHA_WEBGL), '销毁后纹理上传状态未重置');
+      scene = createFlowerScene(canvas, specs); render();
+      const old = scene; dispose(); old.dispose();
+      assert(old.render(slots, state) === false, '已销毁场景仍在渲染');
+      assert([...listeners.values()].every(set => set.size === 0), '重建后监听器残留');
+    });
+    summary.textContent = passed + ' 项真实 WebGL 回归通过';
+    summary.dataset.status = 'passed';
+  } catch (error) {
+    results.textContent += 'FAIL ' + error.stack + '\n';
+    summary.textContent = '回归失败（已通过 ' + passed + ' 项）';
+    summary.dataset.status = 'failed';
+    console.error(error);
+  } finally {
+    second?.dispose(); standalone?.dispose(); dispose();
+    try {
+      keys.forEach((key, i) => stored[i] === null ? localStorage.removeItem(key) : localStorage.setItem(key, stored[i]));
+      preview();
+    } catch (error) {
+      summary.textContent = '预览创建失败'; summary.dataset.status = 'failed';
+      results.textContent += 'FAIL ' + error.stack + '\n'; console.error(error);
+    } finally {
+      run.disabled = false; bloom.disabled = environment.disabled = !scene;
+    }
+  }
+});
+bloom.addEventListener('click', () => { scene.toggleBloom(); render(); });
+environment.addEventListener('click', () => { scene.toggleEnvMap(); render(); });
+window.addEventListener('pagehide', dispose);
+summary.textContent = '就绪'; summary.dataset.status = 'ready'; run.disabled = false;
+</script>
+</html>

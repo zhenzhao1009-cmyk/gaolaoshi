@@ -1,9 +1,11 @@
+
 <!doctype html>
 <html lang="zh-CN">
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Bloom · 指尖花开</title>
+<meta name="application-version" content="3.0.0">
+<title>Bloom · 指尖花开 3.0</title>
 <style>
   :root {
     --paper: #ddc6a7;       /* rice paper, sampled from the lily footage */
@@ -68,6 +70,7 @@
   }
   .brand { color: var(--ink); white-space: nowrap; }
   .brand span { color: var(--muted); }
+  .brand .version { margin-left:6px; font:11px/1 var(--sans); color:var(--muted); vertical-align:middle; }
   .nav { display: flex; flex-wrap: wrap; justify-content: flex-end; gap: 4px 22px; }
   .nav button {
     position: relative;
@@ -327,7 +330,7 @@
   <section class="stage" id="stage" aria-label="花卉交互画布">
     <canvas id="flower" role="img" aria-label="可用手势、滑杆或演示控制开合的花朵"></canvas>
     <header class="top">
-      <div class="brand">Bloom <span>· 指尖花开</span></div>
+      <div class="brand">Bloom <small class="version">3.0</small> <span>· 指尖花开</span></div>
       <nav class="nav" id="dots" aria-label="选择花种"></nav>
     </header>
     <div class="toast" id="toast" role="status" aria-live="polite"></div>
@@ -353,7 +356,7 @@
       </div>
     </div>
     <div class="camera-view" id="cameraView">
-      <video id="video" playsinline muted aria-label="摄像头镜像预览"></video>
+      <video id="video" autoplay playsinline webkit-playsinline muted aria-label="摄像头镜像预览"></video>
       <canvas id="overlay" aria-hidden="true"></canvas>
       <div class="notice" id="notice">
         <h1 id="noticeTitle">以手为笔，让花绽放</h1>
@@ -371,6 +374,7 @@
         <dt>捏合</dt><dd>拇指与食指开合，连续控制所有花种</dd>
         <dt>数指</dt><dd>伸出 0–5 根手指，全花种按阶段开放</dd>
         <dt>展掌</dt><dd>花朵盛放，倾斜手掌调整角度</dd>
+        <dt>并指</dt><dd>五指伸直并拢，保持旋转撒花；荷花、百合、玫瑰的花瓣围着花心转动</dd>
         <dt>挥手</dt><dd>向右下一朵，向左上一朵</dd>
       </dl>
       <label class="manual-control" for="bloomRange"><span>手动赏花</span><input id="bloomRange" type="range" min="0" max="100" value="68" aria-label="左侧花开放程度"><output id="bloomValue" for="bloomRange">68%</output></label>
@@ -386,7 +390,7 @@
   <h2 id="helpTitle">从举手，到花开</h2>
   <p class="help-intro">面对镜头，手掌完整入镜。单手控制一朵花，双手分别控制两朵花。</p>
   <ol class="guide-steps"><li><strong>01 · 举手入镜</strong><p>开启摄像头并允许权限，保持光线充足，等待手部骨架出现。</p></li><li><strong>02 · 让花开放</strong><p>所有花种通用：收起其他三指，用拇指与食指捏合连续开合；或伸出 0–5 根手指，按六个阶段开放。数 2 用食指+中指，拇指+食指为捏合。</p></li><li><strong>03 · 展掌与换花</strong><p>展开手掌欣赏盛放，倾斜手掌转动花朵。横向快速挥手切换花种。</p></li></ol>
-  <p class="help-note">无摄像头也能体验：使用手动滑杆或自动演示。双手首次按画面位置绑定，持续追踪期间尽量保持手部可见。</p>
+  <p class="help-note">所有花种：五指伸直并拢，拇指贴近食指，保持片刻后旋转撒花。荷花、百合、玫瑰的花瓣围着花心顺时针转动，百合的叶片随花瓣一起转动，花茎保持稳定；樱花、山茶保持现有旋转效果。松开或移出镜头后停止。开启“减少动效”时只盛放、不旋转撒花。无摄像头也能体验：使用手动滑杆或自动演示。双手首次按画面位置绑定，持续追踪期间尽量保持手部可见。</p>
   <p class="help-keys">快捷键：空格 演示 · ← → 换花 · 0–5 开度 · D 双花 · V 竖屏 · H 纯净画面</p>
 </dialog>
 
@@ -433,6 +437,10 @@ const FLOWERS = [
     stages: [0, 0.24, 0.38, 0.5, 0.66, 1],
     view: 24, lift: 0.1,
     stem: { len: 1.25, bend: 0.12, w: 0.028, c: "#55703a" },
+    foliage: [
+      { root: [-0.12, -1.17, -0.04], center: [-0.48, -0.4, -0.12], radius: 0.4, tilt: 0.18 },
+      { root: [0.22, -1.18, 0.02], center: [0.45, -0.72, 0.06], radius: 0.32, tilt: 0.48 },
+    ],
     layers: [
       P({ n: 8, len: 0.5, wid: 0.19, p: 0.68, q: 0.9, t0: 9, t1: 80, curl: 12, cup: 0.5, c0: "#e27d98", c1: "#fdf1f3" }),
       P({ n: 8, len: 0.46, wid: 0.18, p: 0.68, q: 0.9, t0: 6, t1: 60, curl: 6, cup: 0.55, delay: 0.12, twist: 22.5, c0: "#e98aa3", c1: "#fff5f7" }),
@@ -450,7 +458,6 @@ const FLOWERS = [
     stem: {
       len: 1.3, bend: 0.1, w: 0.026, c: "#5f7f40",
       leaves: [
-        { at: 0.18, phi: 220, len: 0.42, wid: 0.095, tilt: 56, curl: 16, fold: 0.5 },
         { at: 0.48, phi: 170, len: 0.5, wid: 0.11, tilt: 52, curl: 18, fold: 0.48 },
         { at: 0.66, phi: 300, len: 0.54, wid: 0.115, tilt: 50, curl: 20, fold: 0.46 },
         { at: 0.84, phi: 90, len: 0.56, wid: 0.12, tilt: 48, curl: 20, fold: 0.46 },
@@ -468,7 +475,11 @@ const FLOWERS = [
     // 全花种双手势：0–5 指数对应六个阶段；两指捏合时连续微调
     stages: [0, 0.2, 0.32, 0.46, 0.62, 1],
     view: 34, lift: 0.08,
-    stem: { len: 1.15, bend: 0.08, w: 0.024, c: "#4d6b33" },
+    stem: { len: 1.15, bend: 0.08, w: 0.024, c: "#4d6b33", thorns: [
+      { at: 0.22, phi: 175, len: 0.055 }, { at: 0.35, phi: 5, len: 0.067 },
+      { at: 0.49, phi: 190, len: 0.05 }, { at: 0.63, phi: 15, len: 0.06 },
+      { at: 0.76, phi: 180, len: 0.045 }, { at: 0.9, phi: 10, len: 0.04 },
+    ] },
     layers: [
       P({ n: 5, len: 0.3, wid: 0.07, p: 0.5, q: 1, t0: 18, t1: 118, curl: 20, cup: 0.1, c0: "#5f7d38", c1: "#3f5826" }), // 萼片
       P({ n: 5, len: 0.42, wid: 0.25, p: 0.5, q: 0.45, t0: 10, t1: 88, curl: 30, cup: 0.55, base: 0.03, twist: 36, c0: "#d42a45", c1: "#8e1328" }),
@@ -530,7 +541,7 @@ function makeSlot(type) {
   return {
     type, bloom: 0.68, target: 0.68, over: 0, overTarget: 0,
     count: 0, countW: [0, 0, 0, 0, 0, 0], tau: 90,
-    yaw: 0, yawTarget: null, fade: 1, mode: "", seen: -1e9,
+    yaw: 0, yawTarget: null, spin: false, spinAngle: 0, fade: 1, mode: "", seen: -1e9,
     swipe: [], lastSwitch: 0, lastDir: 0, modeVotes: { mode: "", n: 0 },
     tips: [], spawn: 0, track: null, manualUntil: 0,
     fPinch: oneEuro(), fSpread: oneEuro(), fRoll: oneEuro(0.8, 2),
@@ -760,6 +771,7 @@ function setBloom(i, value, celebrate = false, mode = "manual") {
   s.target = Number.isFinite(value) ? clamp(value) : 0;
   s.overTarget = celebrate && !reducedMotion ? 1 : 0;
   s.yawTarget = null;
+  s.spin = false;
   s.mode = mode; s.manualUntil = performance.now() + 1800;
   s.tau = mode === "count" ? 320 : 120;
 }
@@ -767,6 +779,7 @@ function chooseFlower(i, type) {
   const s = slots[i];
   s.type = (type + FLOWERS.length) % FLOWERS.length;
   s.fade = 0; s.overTarget = 0; s.yawTarget = null;
+  s.spin = false; s.spinAngle = 0;
   s.countW = [0, 0, 0, 0, 0, 0];
   s.modeVotes = { mode: "", n: 0 }; s.mode = "";
   ensureFrames(FLOWERS[s.type]);
@@ -869,7 +882,7 @@ if (new URLSearchParams(location.search).has("phone")) setPhone(true);
 const bgCache = document.createElement("canvas");
 function resize() {
   const r = canvas.getBoundingClientRect();
-  const dpr = Math.min(window.devicePixelRatio || 1, 1.5);
+  const dpr = Math.min(window.devicePixelRatio || 1, 2.5);
   canvas.width = Math.round(r.width * dpr);
   canvas.height = Math.round(r.height * dpr);
   // 背景渐变只在尺寸变化时画一次，之后每帧直接贴图
@@ -909,10 +922,7 @@ function camera(cx, cy, R, yaw, pitchDeg) {
 }
 // 三维点 → [屏幕x, 屏幕y, 深度]（深度越大越靠近观众）
 function proj(C, x, y, z) {
-  const x1 = x * C.cyw + z * C.syw;
-  const z1 = -x * C.syw + z * C.cyw;
-  const y2 = y * C.cp - z1 * C.sp;
-  const z2 = y * C.sp + z1 * C.cp;
+  const [x1, y2, z2] = rot(C, x, y, z);
   const k = C.f / (C.f - z2 * C.R);
   return [C.cx + x1 * C.R * k, C.cy - y2 * C.R * k, z2];
 }
@@ -1087,42 +1097,154 @@ function drawLeaf(g, pt, R) {
   g.stroke();
 }
 
+const LOTUS_WATER_Y = -1.04;
+function lotusStemInk(g, x, surfaceY, endY, R, color) {
+  const ink = g.createLinearGradient(x, surfaceY - R * 0.025, x, Math.max(surfaceY + R * 0.09, endY + R * 0.015));
+  ink.addColorStop(0, color); ink.addColorStop(0.25, "rgba(64,117,108,.8)");
+  ink.addColorStop(0.6, "rgba(47,103,119,.36)"); ink.addColorStop(1, "rgba(30,77,110,0)");
+  return ink;
+}
+function lotusLeafEntry(pt, R) {
+  const { root, center, waterline } = pt;
+  const c1 = [root[0] + (center[0] - root[0]) * 0.2, (root[1] + center[1]) * 0.5];
+  const c2 = [center[0], center[1] + R * 0.2];
+  const curve = (t, i) => (1-t)**3*root[i]+3*(1-t)**2*t*c1[i]+3*(1-t)*t*t*c2[i]+t**3*center[i];
+  let lo = 0, hi = 1;
+  for (let k = 0; k < 16; k++) { const t = (lo+hi)/2; if (curve(t,1)>waterline[1]) lo=t; else hi=t; }
+  return [curve((lo+hi)/2,0), waterline[1]];
+}
+// 圆盾形荷叶：叶柄接在叶片中央，叶脉由中心向外放射。
+function lotusLeaf(C, { root, center: [cx, cy, cz], radius: W, tilt }) {
+  const point = (a, t = 1) => {
+    const r = W * t * (1 + 0.06 * Math.sin(a * 5) + 0.025 * Math.sin(a * 9));
+    const dz = Math.sin(a) * r;
+    return proj(C, cx + Math.cos(a) * r, cy - dz * tilt + W * (0.14 + 0.045 * Math.sin(a * 3)) * t * t, cz + dz);
+  };
+  const center = point(0, 0), outline = Array.from({ length: 64 }, (_, k) => point(k / 64 * Math.PI * 2));
+  const veins = Array.from({ length: 12 }, (_, k) => { const a = k / 12 * Math.PI * 2; return [point(a, 0.48), point(a, 0.94)]; });
+  return { root: proj(C, ...root), waterline: proj(C, root[0], LOTUS_WATER_Y, root[2]), center, outline, veins, z: outline.reduce((sum, p) => sum + p[2], 0) / outline.length };
+}
+function drawLotusLeaf(g, pt, R) {
+  const { root, center, outline, veins } = pt;
+  g.beginPath(); g.moveTo(root[0], root[1]); g.bezierCurveTo(root[0] + (center[0] - root[0]) * 0.2, root[1] - (root[1] - center[1]) * 0.5, center[0], center[1] + R * 0.2, center[0], center[1]);
+  g.strokeStyle = lotusStemInk(g, root[0], pt.waterline[1], root[1], R, "#526e3c"); g.lineWidth = Math.max(1, R * 0.012); g.stroke();
+  g.beginPath(); outline.forEach((p, k) => k ? g.lineTo(p[0], p[1]) : g.moveTo(p[0], p[1])); g.closePath();
+  const grad = g.createRadialGradient(center[0], center[1], 0, center[0], center[1] - R * 0.06, R * 0.4);
+  grad.addColorStop(0, "#446b40"); grad.addColorStop(0.55, "#76955a"); grad.addColorStop(1, "#526e43");
+  g.fillStyle = grad; g.fill(); g.strokeStyle = "rgba(43,77,38,.6)"; g.lineWidth = Math.max(0.7, R * 0.003); g.stroke();
+  g.strokeStyle = "rgba(207,222,152,.28)"; g.lineWidth = Math.max(0.5, R * 0.002);
+  for (const [mid, tip] of veins) { g.beginPath(); g.moveTo(center[0], center[1]); g.quadraticCurveTo(mid[0], mid[1], tip[0], tip[1]); g.stroke(); }
+  g.beginPath(); g.arc(center[0], center[1], Math.max(1, R * 0.009), 0, Math.PI * 2); g.fillStyle = "#c0cd8d"; g.fill();
+}
+
 function stemPoint(st, t) { return [st.bend * t * t, -st.len * 0.88 * t, 0]; }
+const hasPetalSpin = (f) => ["Lotus", "Lily", "Rose"].includes(f.name);
+
+function drawLotusWater(g, C, R, alpha) {
+  const [x, y] = proj(C, 0.04, LOTUS_WATER_Y, 0);
+  const rx = R * 0.94, ry = R * 0.19;
+  g.save();
+  g.globalAlpha = alpha;
+  g.translate(x, y); g.scale(rx, ry);
+  const wash = g.createRadialGradient(0, -0.12, 0.08, 0, 0, 1);
+  wash.addColorStop(0, "rgba(13,44,73,.97)");
+  wash.addColorStop(0.7, "rgba(18,58,88,.92)");
+  wash.addColorStop(0.92, "rgba(26,68,95,.66)");
+  wash.addColorStop(1, "rgba(33,75,99,.06)");
+  g.beginPath(); g.arc(0, 0, 1, 0, Math.PI * 2); g.fillStyle = wash; g.fill();
+  g.restore();
+  g.save(); g.globalAlpha = alpha;
+  g.strokeStyle = "rgba(165,209,230,.3)"; g.lineWidth = Math.max(0.6, R * 0.003);
+  g.beginPath(); g.ellipse(x, y, rx * 0.76, ry * 0.64, 0, 0.12, Math.PI * 0.91); g.stroke();
+  g.beginPath(); g.ellipse(x - R * 0.08, y - ry * 0.06, rx * 0.88, ry * 0.82, 0, Math.PI * 1.13, Math.PI * 1.83); g.stroke();
+  g.strokeStyle = "rgba(132,189,220,.23)";
+  g.beginPath(); g.ellipse(x + R * 0.02, y, R * 0.12, R * 0.027, 0, 0.1, Math.PI * 1.85); g.stroke();
+  g.restore();
+}
+
+function drawLotusWaterContacts(g, entries, R, alpha) {
+  g.save(); g.globalAlpha = alpha;
+  entries.forEach(([x,y], i) => {
+    const reflection = g.createLinearGradient(x,y,x,y+R*0.1);
+    reflection.addColorStop(0,"rgba(116,166,169,.38)"); reflection.addColorStop(1,"rgba(70,120,154,0)");
+    g.strokeStyle=reflection; g.lineWidth=Math.max(1,R*.009);
+    g.beginPath(); g.moveTo(x,y+R*.008); g.quadraticCurveTo(x-R*.02,y+R*.05,x+R*.008,y+R*.1); g.stroke();
+    g.fillStyle="rgba(5,25,47,.55)"; g.beginPath(); g.ellipse(x,y,R*.024,R*.008,0,0,Math.PI*2); g.fill();
+    for(let ring=0;ring<3;ring++) {
+      const r=R*(.043+ring*.045+i*.004);
+      g.strokeStyle=`rgba(170,219,240,${.48-ring*.13})`; g.lineWidth=Math.max(.55,R*.0027);
+      g.beginPath(); g.ellipse(x,y,r,r*.27,0,Math.PI*.08,Math.PI*.94); g.stroke();
+      g.strokeStyle=`rgba(106,167,200,${.28-ring*.07})`;
+      g.beginPath(); g.ellipse(x,y,r,r*.27,0,Math.PI*1.12,Math.PI*1.87); g.stroke();
+    }
+    g.strokeStyle="rgba(220,242,247,.7)"; g.lineWidth=Math.max(.6,R*.003);
+    g.beginPath(); g.ellipse(x,y-R*.002,R*.027,R*.009,0,Math.PI*.12,Math.PI*.8); g.stroke();
+  });
+  g.restore();
+}
 
 function drawFlower3D(g, slot, cx, cy, R, alpha, now) {
   const f = FLOWERS[slot.type];
   const b = slot.bloom;
-  const C = camera(cx, cy, R, slot.yaw, f.view);
+  const stemC = camera(cx, cy, R, slot.yaw, f.view);
+  // 花冠围绕花心的直立轴顺时针转动；花茎使用独立姿态，保持稳定。
+  const C = camera(cx, cy, R, slot.yaw + (hasPetalSpin(f) ? -slot.spinAngle : slot.spinAngle), f.view);
   const items = [];
   const tips = [];
+  const waterEntries = [];
+  if (f.name === "Lotus") drawLotusWater(g, stemC, R, alpha);
 
   // 花茎
   if (f.stem) {
     const st = f.stem;
     const pts = [];
-    for (let k = 0; k <= 16; k++) pts.push(proj(C, ...stemPoint(st, k / 16)));
+    for (let k = 0; k <= 16; k++) pts.push(proj(stemC, ...stemPoint(st, k / 16)));
+    const entry = f.name === "Lotus" ? proj(stemC, ...stemPoint(st, -LOTUS_WATER_Y / (st.len * 0.88))) : null;
+    if (entry) waterEntries.push(entry);
     items.push({
-      z: -9, draw() {
+      z: pts.reduce((sum, p) => sum + p[2], 0) / pts.length, draw() {
         g.beginPath();
         g.moveTo(pts[0][0], pts[0][1]);
         for (const p of pts) g.lineTo(p[0], p[1]);
-        g.strokeStyle = st.c;
+        g.strokeStyle = entry ? lotusStemInk(g,entry[0],entry[1],pts[pts.length-1][1],R,st.c) : st.c;
         g.lineCap = "round";
         g.lineWidth = st.w * R;
         g.stroke();
         g.strokeStyle = "rgba(255,255,255,0.12)";
         g.lineWidth = st.w * R * 0.3;
-        g.stroke();
+        if (!entry) g.stroke();
       },
     });
+    for (const thorn of st.thorns || []) {
+      const [x,y,z] = stemPoint(st,thorn.at), a=thorn.phi*DEG, rx=Math.cos(a), rz=Math.sin(a), len=thorn.len;
+      const p=(d,h)=>proj(stemC,x+rx*(st.w*.3+d),y+h,z+rz*(st.w*.3+d));
+      const top=p(0,len*.4), bottom=p(0,-len*.4), tip=p(len,-len*.36);
+      const upper=p(len*.42,len*.18), lower=p(len*.17,-len*.19);
+      items.push({z:(top[2]+bottom[2]+tip[2])/3,draw(){
+        g.beginPath(); g.moveTo(top[0],top[1]);
+        g.quadraticCurveTo(upper[0],upper[1],tip[0],tip[1]);
+        g.quadraticCurveTo(lower[0],lower[1],bottom[0],bottom[1]); g.closePath();
+        const shade=g.createLinearGradient(top[0],top[1],tip[0],tip[1]);
+        shade.addColorStop(0,"#61703c"); shade.addColorStop(.55,"#716044"); shade.addColorStop(1,"#703b2c");
+        g.fillStyle=shade; g.fill(); g.strokeStyle="rgba(63,54,28,.42)"; g.lineWidth=Math.max(.45,R*.0017); g.stroke();
+      }});
+    }
     (st.leaves || []).forEach((lf, li) => {
       const [x, y, z] = stemPoint(st, lf.at);
-      const pt = leaf(C, {
-        bx: x, by: y, bz: z, phi: lf.phi * DEG, theta: lf.tilt * DEG, curl: lf.curl * DEG,
+      // 百合叶片与花冠同向转动，围绕叶根旋转以保持与花茎相连。
+      const pt = leaf(stemC, {
+        bx: x, by: y, bz: z, phi: lf.phi * DEG + (f.name === "Lily" ? slot.spinAngle : 0), theta: lf.tilt * DEG, curl: lf.curl * DEG,
         L: lf.len, W: lf.wid, seed: li, fold: lf.fold || 0.42,
       });
       items.push({ z: pt.z, draw: () => drawLeaf(g, pt, R) });
     });
+  }
+
+  // 荷叶各有从下方独立伸出的叶柄，与花茎分开。
+  for (const foliage of f.foliage || []) {
+    const pt = lotusLeaf(stemC, foliage);
+    waterEntries.push(lotusLeafEntry(pt, R));
+    items.push({ z: pt.z, draw: () => drawLotusLeaf(g, pt, R) });
   }
 
   // 花瓣
@@ -1241,6 +1363,7 @@ function drawFlower3D(g, slot, cx, cy, R, alpha, now) {
   for (const it of items) it.draw();
   g.restore();
   slot.tips = tips;
+  if (f.name === "Lotus") drawLotusWaterContacts(g,waterEntries,R,alpha);
 }
 
 function drawFrames(g, slot, cx, cy, R, alpha) {
@@ -1260,7 +1383,7 @@ function drawFrames(g, slot, cx, cy, R, alpha) {
   g.save();
   g.globalAlpha = alpha;
   g.translate(cx, cy);
-  g.rotate(clamp(slot.yaw * 0.12, -0.25, 0.25));
+  g.rotate(clamp(slot.yaw * 0.12, -0.25, 0.25) + (hasPetalSpin(f) ? 0 : slot.spinAngle));
   g.drawImage(img, -w / 2, -h / 2, w, h);
   g.restore();
   // 花瓣雨从花的轮廓附近飘出来
@@ -1340,10 +1463,13 @@ function drawScene(now, dt = 1000 / 60) {
     const f = FLOWERS[s.type];
     const cx = w * (i === 0 ? lerp(0.5, 0.29, duo) : 0.71);
     const R = baseR * lerp(1, 0.66, duo);
+    const modelSpin = hasPetalSpin(f);
+    // 图片序列没有深度；前三种花旋转时使用三维曲面，并在松手后保留模型姿态。
+    const useFrames = f.images && !(modelSpin && (s.spin || s.spinAngle !== 0));
     // 侧面看的花有花茎，花头放高一点
     // 手机竖框里舞台很矮，花往上挪，给左下角的花名留位置
     const phone = document.body.classList.contains("phone");
-    const cy = h * (f.images ? (phone ? 0.39 : 0.46) : f.view < 45 ? 0.36 : 0.43);
+    const cy = h * (useFrames ? (phone ? 0.39 : 0.46) : f.view < 45 ? 0.36 : 0.43);
     const glow = ctx.createRadialGradient(cx, cy, 0, cx, cy, R * (0.7 + s.bloom * 0.7));
     const tint = "255,250,238"; // 花背后一团柔和的亮光，像纸被光照亮
     glow.addColorStop(0, `rgba(${tint},${(0.04 + s.bloom * 0.1 + s.over * 0.1) * vis})`);
@@ -1353,7 +1479,7 @@ function drawScene(now, dt = 1000 / 60) {
     ctx.fillRect(cx - gr, cy - gr, gr * 2, gr * 2);
 
     const alpha = s.fade * vis;
-    if (f.images) drawFrames(ctx, s, cx, cy, R, alpha);
+    if (useFrames) drawFrames(ctx, s, cx, cy, R, alpha);
     else drawFlower3D(ctx, s, cx, cy, R * (0.94 + 0.06 * s.fade), alpha, now);
 
     if (!reducedMotion && s.over > 0.05 && vis > 0.5) {
@@ -1375,7 +1501,7 @@ function drawScene(now, dt = 1000 / 60) {
  * ============================================================ */
 let landmarker = null;
 let lastVideoTime = -1;
-let lastHandCount = 0;
+let lastTwoHandsAt = -Infinity;
 let cameraState = "idle", cameraEpoch = 0, inferenceFailures = 0, inferenceRetryAt = 0;
 
 const HAND_LINKS = [
@@ -1404,7 +1530,8 @@ function setCameraState(state, detail = "") {
   cameraWindowToggle.setAttribute("aria-label", cameraWindowToggle.title);
 }
 function clearHandTracks() {
-  slots.forEach(s => { s.track = null; s.swipe = []; s.seen = -1e9; s.overTarget = 0; s.yawTarget = null; });
+  lastTwoHandsAt = -Infinity;
+  slots.forEach(s => { s.track = null; s.swipe = []; s.seen = -1e9; s.overTarget = 0; s.yawTarget = null; s.spin = false; });
   octx.clearRect(0, 0, overlay.width, overlay.height);
 }
 function stopCamera(message = "摄像头已关闭，花朵保留当前状态。") {
@@ -1418,22 +1545,29 @@ function stopCamera(message = "摄像头已关闭，花朵保留当前状态。"
 }
 async function startCamera() {
   if (cameraState === "loading" || cameraState === "running") return;
+  if (window.isSecureContext === false) {
+    setCameraState("error", "手机摄像头需要 HTTPS 安全地址。请使用 HTTPS 链接打开；电脑的局域网 HTTP 地址无法获取摄像头权限。");
+    return;
+  }
   if (!navigator.mediaDevices?.getUserMedia || typeof WebAssembly === "undefined") {
-    setCameraState("error", "此环境暂不支持摄像头识别。请通过启动脚本在 Chrome 或 Edge 中打开；你仍可使用演示和滑杆。");
+    setCameraState("error", "当前浏览器不支持摄像头识别。iPhone 请用 Safari，安卓请用 Chrome 打开 HTTPS 链接；应用内请通过菜单选择在浏览器中打开。");
     return;
   }
   const epoch = ++cameraEpoch;
   stopDemo(); setCameraState("loading", "首次加载需要片刻，请在浏览器询问时允许使用摄像头。");
   try {
+    // 在点击事件中立即请求权限，避免模型加载阻塞手机端授权。
+    await openCamera($("camSel").value || undefined, epoch);
+    if (epoch !== cameraEpoch) return;
+    $("noticeDetail").textContent = "摄像头已连接，正在加载手势识别…";
     const fileset = await FilesetResolver.forVisionTasks("./lib/wasm");
+    if (epoch !== cameraEpoch) return;
     const options = { baseOptions: { modelAssetPath: "./models/hand_landmarker.task", delegate: "GPU" }, runningMode: "VIDEO", numHands: 2, minHandDetectionConfidence: 0.5, minHandPresenceConfidence: 0.3, minTrackingConfidence: 0.3 };
     let task;
     try { task = await HandLandmarker.createFromOptions(fileset, options); }
     catch (gpuError) { options.baseOptions.delegate = "CPU"; task = await HandLandmarker.createFromOptions(fileset, options); }
     if (epoch !== cameraEpoch) { task.close?.(); return; }
     landmarker = task;
-    await openCamera($("camSel").value || undefined);
-    if (epoch !== cameraEpoch) { video.srcObject?.getTracks().forEach(t => t.stop()); video.srcObject = null; return; }
     inferenceFailures = 0; inferenceRetryAt = 0;
     setCameraState("running");
     listCameras().catch(() => camMsg("摄像头已连接，暂时无法读取设备列表。"));
@@ -1455,21 +1589,22 @@ let switching = false;
 function cameraHint(err) {
   const name = err?.name;
   if (name === "NotReadableError" || name === "AbortError") return "摄像头正被其他应用占用，或暂时不可用。关闭占用程序后点击重试。";
-  if (name === "NotAllowedError" || name === "SecurityError") return "摄像头权限未开启。请在地址栏的网站权限中允许摄像头，再点击重试。";
+  if (name === "NotAllowedError" || name === "SecurityError") return "摄像头权限未开启。请在浏览器的网站权限及手机系统设置中允许摄像头，再点击重试；应用内请改用 Safari 或 Chrome 打开。";
   if (name === "NotFoundError") return "未发现摄像头。连接设备后可重新尝试，或先使用自动演示。";
   if (name === "OverconstrainedError") return "所选设备暂不可用，请选择其他摄像头。";
   return "手势识别未能启动。可尝试 Chrome 或 Edge，或点击重试；演示模式仍可使用。";
 }
 function camMsg(text) { $("camMsg").textContent = text || ""; }
 
-async function openCamera(deviceId) {
+async function openCamera(deviceId, epoch = cameraEpoch) {
   const prev = video.srcObject?.getVideoTracks()[0]?.getSettings().deviceId;
   if (video.srcObject) {
     video.srcObject.getTracks().forEach((t) => t.stop());
     video.srcObject = null;
     await sleep(300); // 让上一个摄像头（尤其是 iPhone）完全释放
   }
-  const which = deviceId ? { deviceId: { exact: deviceId } } : { facingMode: "user" };
+  if (epoch !== cameraEpoch) return;
+  const which = deviceId ? { deviceId: { exact: deviceId } } : { facingMode: { ideal: "user" } };
   let stream;
   try {
     stream = await navigator.mediaDevices.getUserMedia({
@@ -1477,19 +1612,25 @@ async function openCamera(deviceId) {
       audio: false,
     });
   } catch (err) {
-    if (err.name !== "OverconstrainedError") throw err;
-    // 不支持 1080p 就不提分辨率要求，再试一次
-    stream = await navigator.mediaDevices.getUserMedia({ video: which, audio: false });
+    if (err.name !== "OverconstrainedError" && !(deviceId && err.name === "NotFoundError")) throw err;
+    if (epoch !== cameraEpoch) return;
+    // 设备标识可能在手机权限变更后失效，恢复默认前置摄像头并保留高清偏好。
+    stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: { ideal: "user" }, width: { ideal: 1280 }, height: { ideal: 720 } }, audio: false });
   }
+  if (epoch !== cameraEpoch) { stream.getTracks().forEach(t => t.stop()); return; }
+  video.muted = true;
+  video.autoplay = true;
+  video.playsInline = true;
   video.srcObject = stream;
   await video.play();
+  if (epoch !== cameraEpoch) { stream.getTracks().forEach(t => t.stop()); if (video.srcObject === stream) video.srcObject = null; return; }
   lastVideoTime = -1; clearHandTracks();
   const track = stream.getVideoTracks()[0];
   const st = track.getSettings();
   const cameraWidth = st.width || video.videoWidth;
   const cameraHeight = st.height || video.videoHeight;
   if (cameraWidth && cameraHeight) $("cameraView").style.aspectRatio = `${cameraWidth} / ${cameraHeight}`;
-  $("camRes").textContent = `${st.width}×${st.height}`;
+  $("camRes").textContent = cameraWidth && cameraHeight ? `${cameraWidth}×${cameraHeight}` : "已连接";
   camMsg(track.label ? `已连接 · ${cleanLabel(track.label)}` : "摄像头已连接");
   track.addEventListener("ended", () => { if (video.srcObject === stream) { stopCamera(); setCameraState("error", "摄像头已断开，请重新连接后点击重试。"); } });
   return st.deviceId || prev;
@@ -1502,6 +1643,8 @@ const isDeskView = (l) => /桌上视角|desk view/i.test(l);
 // 摄像头选择：Mac 上可以选 iPhone（连续互通相机），画质高很多
 async function listCameras() {
   const sel = $("camSel");
+  // 未授权时不枚举并自动选中后置镜头，首次启动保留前置摄像头偏好。
+  if (cameraState !== "running") return;
   const all = (await navigator.mediaDevices.enumerateDevices()).filter((d) => d.kind === "videoinput");
   const cams = all.filter((c) => !isDeskView(c.label));
   // 正在切换时保留用户的选择，别被刷新冲掉
@@ -1567,7 +1710,7 @@ const SWIPE_MS = 450, SWIPE_DIST = 0.16;
 // 两指最多把花开到七成（外层花瓣打开），剩下三成留给五指张开
 const PINCH_MAX = 0.7;
 
-function readHand(h, prev) {
+function readHand(h, prev, wasTogether = false) {
   const palm = dist(h[0], h[9]);
   const pv = Array.isArray(prev) && prev.length === 5 ? prev : [null, null, null, null, null];
   const idx = fingerExtended(h, 8, 5, pv[1]);
@@ -1589,13 +1732,22 @@ function readHand(h, prev) {
   // 捏合时拇指尖靠近食指尖，但离食指根仍有约一根食指的距离；
   // 单伸食指时拇指收在掌心，离食指根更近。用这个比例把"捏合"和"数 1"分开。
   const thumbPinch = dist(h[4], h[5]) / Math.max(1e-9, palm) > 0.42;
-  return { idx, others, ratio, pinch, spread, roll, ext, count, thumbPinch };
+  // 并指时拇指贴近食指，不能用“拇指向外张开”来判断第五指。
+  const thumbLength = dist(h[2], h[3]) + dist(h[3], h[4]);
+  const thumbStraight = thumbLength > 1e-6 && dist(h[2], h[4]) / thumbLength > (wasTogether ? 0.84 : 0.9)
+    && dist(h[0], h[4]) > dist(h[0], h[3]) * 1.04;
+  const adjacentGap = Math.max(dist(h[8], h[12]), dist(h[12], h[16]), dist(h[16], h[20])) / Math.max(1e-9, palm);
+  const thumbGap = dist(h[4], h[8]) / Math.max(1e-9, palm);
+  const together = ext.slice(1).every(Boolean) && thumbStraight
+    && adjacentGap < (wasTogether ? 0.5 : 0.38) && thumbGap < (wasTogether ? 0.96 : 0.78);
+  return { idx, others, ratio, pinch, spread, roll, ext, count, thumbPinch, together };
 }
 
 function applyHand(i, h, now) {
   const s = slots[i];
+  s.spin = false;
   if (now < s.manualUntil) { s.seen = now; $("m" + i).textContent = "手动赏花 · 稍后恢复手势"; return; }
-  const r = readHand(h, s.ext);
+  const r = readHand(h, s.ext, s.mode === "gather");
   r.pinch = clamp(s.fPinch(r.pinch, now));
   r.spread = clamp(s.fSpread(r.spread, now));
   r.roll = s.fRoll(r.roll, now);
@@ -1603,11 +1755,12 @@ function applyHand(i, h, now) {
   // 张指数 0–5 对应六个阶段；五指展开进入展掌，继续盛放并转动花朵。
   const pinchPose = r.idx && r.others === 0 && r.thumbPinch;
   const palmPose = r.idx && r.count === 5;
-  const want = pinchPose ? "pinch" : palmPose ? "palm" : "count";
+  const gatherPose = r.together;
+  const want = gatherPose ? "gather" : pinchPose ? "pinch" : palmPose ? "palm" : "count";
   // 防抖：同一个手势连续 6 帧才切换
   if (want === s.modeVotes.mode) s.modeVotes.n++;
   else s.modeVotes = { mode: want, n: 1 };
-  if (!s.mode || s.modeVotes.n >= 6) s.mode = want;
+  if ((!s.mode && want !== "gather") || s.modeVotes.n >= 6) s.mode = want;
   s.seen = now;
 
   // 挥手换花：看手掌中心（掌根 + 四个指根的平均）在 450ms 内的横向位移。
@@ -1649,7 +1802,13 @@ function applyHand(i, h, now) {
   const best = s.countW.indexOf(Math.max(...s.countW));
   if (best !== s.count && s.countW[best] > 2.6) s.count = best;
 
-  if (s.mode === "pinch") {
+  if (s.mode === "gather") {
+    s.tau = 90;
+    s.target = stages[5] ?? 1;
+    s.spin = gatherPose && !reducedMotion;
+    s.overTarget = s.spin ? 1 : 0;
+    s.yawTarget = null;
+  } else if (s.mode === "pinch") {
     s.tau = 90;
     // 两指：张开多少，花就开多少，连续变化
     s.target = r.pinch * PINCH_MAX;
@@ -1669,7 +1828,9 @@ function applyHand(i, h, now) {
     s.yawTarget = s.count === 5 ? -r.roll * 2.2 : null;
   }
 
-  $("m" + i).textContent = s.mode === "pinch"
+  $("m" + i).textContent = s.mode === "gather"
+    ? (s.spin ? "并指 · 旋转撒花" : "并指 · 花朵盛放")
+    : s.mode === "pinch"
     ? `捏合 · ${Math.round(r.pinch * 100)}%`
     : s.mode === "palm"
       ? `展掌 · ${Math.round(r.spread * 100)}%`
@@ -1706,7 +1867,7 @@ function detect(now) {
     const s = slots[i];
     if (now - s.seen > 500 && !demoMode) {
       $("m" + i).textContent = s.track ? "暂未检测到，保持花开" : "等待举手";
-      s.overTarget = 0; s.yawTarget = null;
+      s.overTarget = 0; s.yawTarget = null; s.spin = false;
     }
     if (s.track && now - s.track.t > 1200) { s.track = null; s.swipe = []; }
   }
@@ -1727,9 +1888,27 @@ function assignHands(hands, now, labels = []) {
   let pairs;
   if (observations.length === 1) {
     const o = observations[0];
-    pairs = [[cost(0, o) <= cost(1, o) ? 0 : 1, o]];
-    if (!slots.some(s => s.track)) pairs = [[0, o]];
+    const trackedSlot = cost(0, o) <= cost(1, o) ? 0 : 1;
+    // 双手短暂漏检时保留身份；回到单花后，任意一只手都接管可见的花。
+    const singleFlower = !forceDuo && now - lastTwoHandsAt >= 400;
+    if (singleFlower) {
+      if (trackedSlot === 1 || (slots[0].track?.label && o.label && slots[0].track.label !== o.label)) {
+        slots[0].track = null;
+        slots[0].swipe = []; // 换手接管不算挥手，避免意外切换花种。
+      }
+      slots[1].track = null;
+      slots[1].seen = -1e9;
+      slots[1].swipe = [];
+      slots[1].overTarget = 0;
+      slots[1].yawTarget = null;
+      slots[1].spin = false;
+      pairs = [[0, o]];
+    } else {
+      pairs = [[trackedSlot, o]];
+      if (!slots.some(s => s.track)) pairs = [[0, o]];
+    }
   } else {
+    lastTwoHandsAt = now;
     const [a, b] = observations;
     // 只有双手都在持续追踪中，才按身份/位置代价配对；首次同框或有一侧
     // 的追踪已过期时，直接按画面左右重绑。画面是镜像的，原始画面 x 越大
@@ -1838,6 +2017,8 @@ function loop(now) {
   const wantDuo = forceDuo || twoHands;
   duo += ((wantDuo ? 1 : 0) - duo) * follow(dt, 200);
   slots.forEach((s, i) => {
+    if (s.spin && (reducedMotion || demoMode || now - s.seen > 500)) { s.spin = false; s.overTarget = 0; }
+    if (s.spin) s.spinAngle += dt * 0.0012;
     s.bloom += (s.target - s.bloom) * follow(dt, s.tau);
     s.over += (s.overTarget - s.over) * follow(dt, 180);
     // 没在转掌时，花自己轻轻摆动，让人看出它是立体的
@@ -1883,7 +2064,7 @@ requestAnimationFrame(loop);
 function stopDemo() {
   if (!demoMode) return;
   demoMode = false;
-  slots.forEach(s => { s.overTarget = 0; s.yawTarget = null; });
+  slots.forEach(s => { s.overTarget = 0; s.yawTarget = null; s.spin = false; });
   updateDemoControls();
 }
 function toggleDemo() {
@@ -1952,7 +2133,7 @@ $("helpBtn").addEventListener("click", () => $("helpDialog").showModal());
 $("cameraToggle").addEventListener("click", () => cameraState === "running" ? stopCamera() : startCamera());
 $("bloomRange").addEventListener("input", (e) => { stopDemo(); setBloom(0, Number(e.target.value) / 100); });
 $("motionToggle").checked = reducedMotion;
-$("motionToggle").addEventListener("change", (e) => { reducedMotion = e.target.checked; falling.length = 0; slots.forEach(s => s.overTarget = 0); });
+$("motionToggle").addEventListener("change", (e) => { reducedMotion = e.target.checked; falling.length = 0; slots.forEach(s => { s.overTarget = 0; s.spin = false; }); });
 window.addEventListener("pagehide", () => { stopCamera(); for (const f of FLOWERS) releaseFrames(f); });
 setCameraState("idle");
 updateExperience(performance.now());
